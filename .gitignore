@@ -4,3 +4,7 @@ settingscustom.py
 runserver.sh
 *.log
 .DS_Store
+build
+dist
+*.egg-info
+temp

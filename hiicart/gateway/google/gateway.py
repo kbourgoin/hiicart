@@ -3,8 +3,7 @@ import httplib2
 import urllib
 import xml.etree.cElementTree as ET
 
-from django.template import Context
-from django.template.loader import get_template
+from django.template import Context, loader
 
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 from hiicart.gateway.google.errors import GoogleGatewayError
@@ -85,7 +84,7 @@ class GoogleGateway(PaymentGatewayBase):
           * Checkout returns a url to redirect the user to"""
         self._update_with_cart_settings(cart)
         # Construct cart xml
-        template = get_template("gateway/google/cart.xml")
+        template = loader.get_template("gateway/google/cart.xml")
         ctx = Context({"cart" : cart,
                        "continue_shopping_url" : self.settings.get("SHOPPING_URL", None),
                        "edit_cart_url" : self.settings.get("EDIT_URL", None),
