@@ -9,4 +9,5 @@ urlpatterns = patterns('',
     (r'^amazon/',                                       include(hiicart.gateway.amazon.urls)),
     (r'^google/',                                       include(hiicart.gateway.google.urls)),
     (r'^paypal/',                                       include(hiicart.gateway.paypal.urls)),
+    (r'^paypal_adaptive/',                              include(hiicart.gateway.paypal_adaptive.urls)),
 )
