@@ -1,0 +1,73 @@
+{% load hiicart_tags %}
+<?xml version="1.0" encoding="UTF-8"?>
+<checkout-shopping-cart xmlns="http://checkout.google.com/schema/2">
+  <shopping-cart>
+    <merchant-private-data>
+      <hiicart-purchase id="{{ cart.cart_uuid }}" />
+    </merchant-private-data>
+    <items>
+      {% for lineitem in cart.lineitems.all %}
+       <item>
+          <item-name>{{ lineitem.name }}</item-name>
+          <item-description>{{ lineitem.description }}</item-description>	
+          <quantity>{{ lineitem.quantity }}</quantity>
+	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
+  	      <unit-price currency="{{ currency }}">{{ lineitem.unit_price|floatformat:2 }}</unit-price>
+	        <digital-content>
+	          <description>{{ lineitem.thankyou }}</description>
+	        </digital-content>
+        </item>
+      {% endfor %}
+      {% for lineitem in cart.recurringlineitems.all %}
+       <item>
+          <item-name>{{ lineitem.name }}</item-name>
+          <item-description>{{ lineitem.description }}</item-description>	
+          <quantity>{{ lineitem.quantity }}</quantity>
+	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
+	        <digital-content>
+	          <description>{{ lineitem.thankyou }}</description>
+	        </digital-content>
+          {% if  lineitem.recurring_start %}
+          <unit-price currency="{{ currency }}">0.00</unit-price>
+          {% else %}
+          <unit-price currency="{{ currency }}">{{ lineitem.recurring_price|floatformat:2 }}</unit-price>
+          {% endif %}
+          <subscription type="google" 
+                        period="{% google_recur_period lineitem %}"
+                        {% if  lineitem.recurring_start %}start-date="{{lineitem.recurring_start|date:"c"}}" {% endif %}>
+	          <payments>
+	            <subscription-payment>
+	              <maximum-charge currency="{{ currency }}">{{ lineitem.total|floatformat:2 }}</maximum-charge>
+    	        </subscription-payment>
+	          </payments>
+	          <recurrent-item>
+	            <item-name>{{ lineitem.name }}</item-name>
+	            <item-description>{{ lineitem.description }}</item-description>
+	            <quantity>{{ lineitem.quantity|floatformat:0 }}</quantity>
+  	          <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
+  	          <unit-price currency="{{ currency }}">{{ lineitem.recurring_price|floatformat:2 }}</unit-price>
+	            <merchant-private-item-data>
+                <hiicart-purchase id="{{ cart.cart_uuid }}" />
+	            </merchant-private-item-data>
+              <digital-content>
+	              <description>{{ lineitem.thankyou }}</description>
+	            </digital-content>
+	          </recurrent-item>
+	        </subscription>
+        </item>
+      {% endfor %}
+    </items>
+  </shopping-cart>
+  <checkout-flow-support>
+    <merchant-checkout-flow-support>
+      {% if edit_cart_url %}<edit-cart-url>{{ edit_cart_url }}</edit-cart-url>{% endif %}
+      {% if continue_shopping_url %}<continue-shopping-url>{{ continue_shopping_url }}</continue-shopping-url>{% endif %}
+    </merchant-checkout-flow-support>
+  </checkout-flow-support>
+</checkout-shopping-cart>
+{% comment %}
+
+  To be used later
+
+
+  {% endcomment %}
