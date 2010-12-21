@@ -1,6 +1,7 @@
 import hiicart.gateway.amazon.urls
 import hiicart.gateway.google.urls
 import hiicart.gateway.paypal.urls
+import hiicart.gateway.paypal_adaptive.urls
 
 from django.conf.urls.defaults import *
 

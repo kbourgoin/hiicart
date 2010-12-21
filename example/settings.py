@@ -1,3 +1,8 @@
+import logging
+import os
+
+from datetime import timedelta
+
 # Django settings for example project.
 
 DEBUG = True
@@ -87,5 +92,47 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.admin',
     'south',
-#    'hiicart',
+    'hiicart',
 )
+
+# HiiCart Settings
+# TODO: Create goodsie2 test accounts
+HIICART_SETTINGS = {
+    'CART_COMPLETE':                    '/', 
+    'CART_SETTINGS_FN':                 'apps.storefront.models.cart_settings',
+    'CHARGE_RECURRING_GRACE_PERIOD':    timedelta(hours=12), # Delay before charging recurring item (good for avoid timezone issues)
+    'EXPIRATION_GRACE_PERIOD':          timedelta(days=7), # Grace period to go without payment before deciding a subscription has expired
+    'LIVE':                             False,
+    'LOG':                              'hiicart.log',
+    'LOG_LEVEL':                        logging.DEBUG,
+    'COMP': {
+        'ALLOW_RECURRING_COMP':         False
+        },
+    'GOOGLE': {
+        'MERCHANT_ID':                  '',
+        'MERCHANT_KEY':                 '',
+        'IPN_AUTH_VALS':                'apps.storefront.models.google_auth',
+        },
+    'PAYPAL': {
+        'BUSINESS':                     '',
+        'ENCRYPT':                      False,
+        'IPN_URL':                      'http://kfb.is-a-geek.net/hiicart/paypal/ipn/',
+        'PAYPAL_PUBKEY':                os.path.abspath(os.path.join(os.path.dirname(__file__), "apps/payments/paypal.sandbox.pem")),
+        },
+    'PAYPAL_ADAPTIVE': {
+        'USERID':                       'beta-a_1265578093_biz_api1.flavors.me',
+        'PASSWORD':                     'HC8ANL8SMXBXCDD9',
+        'SIGNATURE':                    'AtCXFEkc6iZWU9Da-95bPn-qQd5qANzzECohvcANgyuQhOIZoOumoM2O',
+        'APP_ID':                       'APP-80W284485P519543T',
+        },
+    'AMAZON': {
+        'AWS_KEY':                      '',
+        'AWS_SECRET':                   '',
+        'CBUI_RETURN_URL':              'http://beta.goodsie2.com/hiicart/amazon/cbui',
+        'IPN_URL':                      'http://kfb.is-a-geek.net/hiicart/amazon/ipn',
+        'BUYER_CANCEL_URL':             '/',
+        'RETURN_URL':                   '/',
+        'ERROR_RETURN_URL':             '/',
+        'CANCEL_RETURN_URL':            '/'
+        }
+    }
