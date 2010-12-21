@@ -111,7 +111,7 @@ class HiiCart(models.Model):
     _cart_uuid = models.CharField(max_length=36,db_index=True) 
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
-    user = models.ForeignKey(User, related_name="hiicarts", null=True, blank=True)
+    user = models.ForeignKey(User, related_name="hiicarts", on_delete=models.SET_NULL, null=True, blank=True)
     # Redirection targets after purchase completes
     failure_url = models.URLField(null=True)
     success_url = models.URLField(null=True)
