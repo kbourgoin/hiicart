@@ -1,4 +1,5 @@
 import copy
+import django
 import logging
 import uuid
 
@@ -100,6 +101,12 @@ def _get_gateway(name):
 
 ### Models
 
+# Stop CASCADE ON DELETE with User, but keep compatibility with django < 1.3
+if django.VERSION[1] >= 3 and settings.HIICART_SETTINGS.get("KEEP_ON_USER_DELETE", False):
+    _user_delete_behavior = models.SET_NULL
+else:
+    _user_delete_behavior = None 
+
 class HiiCart(models.Model):
     """
     Collects information about an order and tracks its state.
@@ -111,7 +118,10 @@ class HiiCart(models.Model):
     _cart_uuid = models.CharField(max_length=36,db_index=True) 
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
-    user = models.ForeignKey(User, related_name="hiicarts", null=True, blank=True)
+    if _user_delete_behavior is not None:
+        user = models.ForeignKey(User, related_name="hiicarts", on_delete=_user_delete_behavior, null=True, blank=True)
+    else:
+        user = models.ForeignKey(User, related_name="hiicarts", null=True, blank=True)
     # Redirection targets after purchase completes
     failure_url = models.URLField(null=True)
     success_url = models.URLField(null=True)
