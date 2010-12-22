@@ -12,7 +12,7 @@ from django.core import urlresolvers
 from django.utils.datastructures import SortedDict
 from urllib2 import HTTPError
 
-from hiicart.gateway.paypal_adaptive.errors import PaypalAdaptivePaymentsGatewayError
+from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
 from hiicart.gateway.paypal_adaptive.settings import default_settings
 from hiicart.gateway.base import IPNBase
 from hiicart.models import HiiCart, Payment
@@ -25,11 +25,11 @@ _adaptive_states = {
     }
 
 
-class PaypalAdaptivePaymentsIPN(IPNBase):
+class PaypalAPIPN(IPNBase):
     """Payment Gateway for Paypal Adaptive Payments."""
 
     def __init__(self):
-        super(PaypalAdaptivePaymentsIPN, self).__init__(
+        super(PaypalAPIPN, self).__init__(
                 "paypal_adaptive", default_settings)
 
     def _find_cart(self, data):

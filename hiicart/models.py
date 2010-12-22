@@ -87,7 +87,7 @@ def _get_gateway(name):
     from hiicart.gateway.comp.gateway import CompGateway
     from hiicart.gateway.google.gateway import GoogleGateway
     from hiicart.gateway.paypal.gateway import PaypalGateway
-    from hiicart.gateway.paypal_adaptive.gateway import PaypalAdaptivePaymentsGateway
+    from hiicart.gateway.paypal_adaptive.gateway import PaypalAPGateway
     if name == "amazon":
         return AmazonGateway()
     elif name == "comp":
@@ -97,7 +97,7 @@ def _get_gateway(name):
     elif name == "paypal":
         return PaypalGateway()
     elif name == "paypal_adaptive":
-        return PaypalAdaptivePaymentsGateway()
+        return PaypalAPGateway()
     else:
         raise HiiCartError("Unknown gateway: %s" % name)
 

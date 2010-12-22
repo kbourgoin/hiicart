@@ -1,4 +1,4 @@
 from hiicart.gateway.base import GatewayError
 
-class PaypalAdaptivePaymentsGatewayError(GatewayError):
+class PaypalAPGatewayError(GatewayError):
     pass
