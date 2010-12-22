@@ -1,4 +1,5 @@
 import copy
+import django
 import logging
 import uuid
 
@@ -87,6 +88,7 @@ def _get_gateway(name):
     from hiicart.gateway.comp.gateway import CompGateway
     from hiicart.gateway.google.gateway import GoogleGateway
     from hiicart.gateway.paypal.gateway import PaypalGateway
+    from hiicart.gateway.paypal_adaptive.gateway import PaypalAPGateway
     if name == "amazon":
         return AmazonGateway()
     elif name == "comp":
@@ -95,10 +97,18 @@ def _get_gateway(name):
         return GoogleGateway()
     elif name == "paypal":
         return PaypalGateway()
+    elif name == "paypal_adaptive":
+        return PaypalAPGateway()
     else:
         raise HiiCartError("Unknown gateway: %s" % name)
 
 ### Models
+
+# Stop CASCADE ON DELETE with User, but keep compatibility with django < 1.3
+if django.VERSION[1] >= 3 and settings.HIICART_SETTINGS.get("KEEP_ON_USER_DELETE", False):
+    _user_delete_behavior = models.SET_NULL
+else:
+    _user_delete_behavior = None 
 
 class HiiCart(models.Model):
     """
@@ -111,7 +121,10 @@ class HiiCart(models.Model):
     _cart_uuid = models.CharField(max_length=36,db_index=True) 
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
-    user = models.ForeignKey(User, related_name="hiicarts", null=True, blank=True)
+    if _user_delete_behavior is not None:
+        user = models.ForeignKey(User, related_name="hiicarts", on_delete=_user_delete_behavior, null=True, blank=True)
+    else:
+        user = models.ForeignKey(User, related_name="hiicarts", null=True, blank=True)
     # Redirection targets after purchase completes
     failure_url = models.URLField(null=True)
     success_url = models.URLField(null=True)
