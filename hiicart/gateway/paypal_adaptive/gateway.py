@@ -42,15 +42,11 @@ class PaypalAdaptivePaymentsGateway(PaymentGatewayBase):
 
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""
-        pass
+        raise PaypalAdaptivePaymentsGatewayError("Recurring payments aren't supported in Adaptive Payments.")
 
     def charge_recurring(self, cart, grace_period=None):
-        """
-        Charge a cart's recurring item, if necessary.
-        NOTE: Currently only one recurring item is supported per cart,
-              so charge the first one found.
-        """
-        pass
+        """Charge a cart's recurring item, if necessary."""
+        raise PaypalAdaptivePaymentsGatewayError("Recurring payments aren't supported in Adaptive Payments.")
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""
@@ -61,9 +57,7 @@ class PaypalAdaptivePaymentsGateway(PaymentGatewayBase):
         self._update_with_cart_settings(cart)
         params = {"actionType": "PAY",
                   "currencyCode": "USD",
-                  "memo": "test payment",
                   "feesPayer": "EACHRECEIVER",
-#                  "reverseAllParallelPaymentsOnError": "true",
                   "cancelUrl": self.settings["CANCEL_URL"],
                   "returnUrl": self.settings["RETURN_URL"],
                   "ipnNotificationUrl": self.ipn_url,
