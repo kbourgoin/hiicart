@@ -88,6 +88,7 @@ def _get_gateway(name):
     from hiicart.gateway.comp.gateway import CompGateway
     from hiicart.gateway.google.gateway import GoogleGateway
     from hiicart.gateway.paypal.gateway import PaypalGateway
+    from hiicart.gateway.paypal2.gateway import Paypal2Gateway
     from hiicart.gateway.paypal_adaptive.gateway import PaypalAPGateway
     if name == "amazon":
         return AmazonGateway()
@@ -97,6 +98,8 @@ def _get_gateway(name):
         return GoogleGateway()
     elif name == "paypal":
         return PaypalGateway()
+    elif name == "paypal2":
+        return Paypal2Gateway()
     elif name == "paypal_adaptive":
         return PaypalAPGateway()
     else:
