@@ -7,7 +7,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
 from django import dispatch
-from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
@@ -16,16 +15,18 @@ from django.db.models.fields import DecimalField
 from django.utils.safestring import mark_safe
 from logging.handlers import RotatingFileHandler
 
+from hiicart.settings import SETTINGS as settings
+
 log = logging.getLogger("hiicart.models")
 
 ### Set up library-wide logging
 
-if "LOG" in  settings.HIICART_SETTINGS:
-    level = settings.HIICART_SETTINGS.get("LOG_LEVEL", logging.WARNING)
+if settings["LOG"]:
+    level = settings["LOG_LEVEL"]
     logger = logging.getLogger("hiicart")
     logger.setLevel(level)
     ch = RotatingFileHandler(
-            settings.HIICART_SETTINGS["LOG"],
+            settings["LOG"],
             maxBytes=5242880,
             backupCount=10,
             encoding="utf-8")
@@ -105,7 +106,7 @@ def _get_gateway(name):
 ### Models
 
 # Stop CASCADE ON DELETE with User, but keep compatibility with django < 1.3
-if django.VERSION[1] >= 3 and settings.HIICART_SETTINGS.get("KEEP_ON_USER_DELETE", False):
+if django.VERSION[1] >= 3 and settings["KEEP_ON_USER_DELETE"]:
     _user_delete_behavior = models.SET_NULL
 else:
     _user_delete_behavior = None 
@@ -211,7 +212,7 @@ class HiiCart(models.Model):
         * Dev only because it doesn't actually change when Google or PP
           will bill the subscription next.
         """
-        if settings.HIICART_SETTINGS["LIVE"]:
+        if settings["LIVE"]:
             raise HiiCartError("Development only functionality.")
         if self.state != "PENDCANCEL" and self.state != "RECURRING":
             return
@@ -512,5 +513,5 @@ class RecurringLineItem(LineItemBase):
         """Get subscription expiration based on last payment optionally providing a grace period."""
         if grace_period:
             return datetime.now() > self.get_expiration() + grace_period
-        elif "EXPIRATION_GRACE_PERIOD" in settings.HIICART_SETTINGS:
-            return datetime.now() > self.get_expiration() + settings.HIICART_SETTINGS["EXPIRATION_GRACE_PERIOD"]
+        elif settings["EXPIRATION_GRACE_PERIOD"]:
+            return datetime.now() > self.get_expiration() + settings["EXPIRATION_GRACE_PERIOD"]
