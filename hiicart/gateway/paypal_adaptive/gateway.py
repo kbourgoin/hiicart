@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 from hiicart.gateway.paypal_adaptive import api
 from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
-from hiicart.gateway.paypal_adaptive.settings import default_settings
+from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
 
 POST_URL = "https://www.paypal.com/cgi-bin/webscr"
 POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"

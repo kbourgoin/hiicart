@@ -10,7 +10,7 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
 from hiicart.gateway.base import IPNBase
-from hiicart.gateway.paypal.settings import default_settings
+from hiicart.gateway.paypal.settings import SETTINGS as default_settings
 from hiicart.gateway.paypal.errors import PaypalGatewayError
 from hiicart.models import HiiCart, Payment
 

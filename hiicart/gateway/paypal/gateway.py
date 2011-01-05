@@ -11,7 +11,7 @@ from django.utils.safestring import mark_safe
 
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 from hiicart.gateway.paypal.errors import PaypalGatewayError
-from hiicart.gateway.paypal.settings import default_settings
+from hiicart.gateway.paypal.settings import SETTINGS as default_settings
 
 PAYMENT_CMD = {
     "BUY_NOW" : "_xclick",
@@ -60,14 +60,6 @@ class PaypalGateway(PaymentGatewayBase):
             url = POST_URL
         else:
             url = POST_TEST_URL
-        return mark_safe(url)
-
-    @property
-    def submit_button_url(self, cart):
-        if cart.recurringlineitems.count() > 0:
-            url = self.settings["SUBSCRIBE_BUTTON_URL"]
-        else:
-            url = self.settings["BUY_BUTTON_URL"]
         return mark_safe(url)
 
     def _encrypt_data(self, data):
@@ -200,7 +192,6 @@ class PaypalGateway(PaymentGatewayBase):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         self._update_with_cart_settings(cart)
         alias = self.settings["BUSINESS"]
-        button_url = self.settings["UNSUBSCRIBE_BUTTON_URL"]
         url = "%s?cmd=%s&alias=%s" % (self.submit_url, 
                                       PAYMENT_CMD["UNSUBSCRIBE"],
                                       self.settings["BUSINESS"])

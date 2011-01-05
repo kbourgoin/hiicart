@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.google.errors import GoogleGatewayError 
-from hiicart.gateway.google.settings import default_settings
+from hiicart.gateway.google.settings import SETTINGS as default_settings
 from hiicart.models import HiiCart, Payment
 
 class GoogleIPN(IPNBase):
