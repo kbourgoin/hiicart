@@ -15,7 +15,7 @@ available.
 
 Once set up, create LineItem and HiiCart objects to submit payments:
 
- def foo():
+    def foo():
     cart = HiiCart.objects.create() 
     LineItem.objects.create(
         cart=cart, description="foo", name="bar",
