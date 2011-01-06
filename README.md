@@ -21,6 +21,6 @@ Once set up, create LineItem and HiiCart objects to submit payments:
             cart=cart, description="foo", name="bar",
             quantity=1, sku="12345", thankyou="thanks!",
             unit_price=9.99)
-        return c.submit("google")
+        return cart.submit("google")
 
 This returns an object containing the redirect URL for you user.
