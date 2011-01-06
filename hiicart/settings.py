@@ -61,4 +61,4 @@ SETTINGS = {
 
 # Integrate django settings
 from django.conf import settings as django_settings
-SETTINGS.update(django_settings)
+SETTINGS.update(django_settings.HIICART_SETTINGS)

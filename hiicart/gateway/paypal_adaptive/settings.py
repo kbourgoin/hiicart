@@ -28,7 +28,7 @@ SETTINGS = {
     "IPN_URL": None,
     "PASSWORD": None,
     "RECEIVERS": [],
-    "RETURN_URL": None
+    "RETURN_URL": None,
     "SIGNATURE": None,
     "USERID": None,
 }

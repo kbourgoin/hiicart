@@ -19,7 +19,7 @@ from django.utils.safestring import mark_safe
 from urllib2 import HTTPError
 
 from hiicart.gateway.amazon import fps, ipn
-from hiicart.gateway.amazon.settings import default_settings
+from hiicart.gateway.amazon.settings import SETTINGS as default_settings
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
 
 LIVE_CBUI_URL = "https://authorize.payments.amazon.com/cobranded-ui/actions/start"

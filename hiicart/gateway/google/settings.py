@@ -19,6 +19,6 @@
 SETTINGS = {
     "MERCHANT_ID": None,
     "MERCHANT_KEY": None,
-    "CURRENCY": "USD"
+    "CURRENCY": "USD",
     'IPN_AUTH_VALS': None,
     }
