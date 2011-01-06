@@ -12,9 +12,8 @@ from django.core import urlresolvers
 from django.utils.datastructures import SortedDict
 from urllib2 import HTTPError
 
-from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
-from hiicart.gateway.paypal_adaptive.settings import default_settings
 from hiicart.gateway.base import IPNBase
+from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
 from hiicart.models import HiiCart, Payment
 
 # Payment State translation between Adaptive API and HiiCart

@@ -1,4 +1,5 @@
 from hiicart.gateway.base import GatewayError, PaymentGatewayBase
+from hiicart.gateway.comp.settings import SETTINGS as default_settings
 
 class CompGatewayError(GatewayError):
     pass
@@ -11,7 +12,7 @@ class CompGateway(PaymentGatewayBase):
     a payment of cart.total as successfully paid.
     """
     def __init__(self):
-        super(CompGateway, self).__init__("comp")
+        super(CompGateway, self).__init__("comp", default_settings)
 
     def cancel_recurring(self, cart):
         """Cancel recurring items."""

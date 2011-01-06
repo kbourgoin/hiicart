@@ -12,8 +12,7 @@ from django.utils.datastructures import SortedDict
 from urllib2 import HTTPError
 
 from hiicart.gateway.amazon import fps
-from hiicart.gateway.amazon.errors import AmazonGatewayError
-from hiicart.gateway.amazon.settings import default_settings
+from hiicart.gateway.amazon.settings import SETTINGS as default_settings
 from hiicart.gateway.base import IPNBase
 from hiicart.models import HiiCart, Payment
 

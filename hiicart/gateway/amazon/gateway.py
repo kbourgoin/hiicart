@@ -19,9 +19,8 @@ from django.utils.safestring import mark_safe
 from urllib2 import HTTPError
 
 from hiicart.gateway.amazon import fps, ipn
-from hiicart.gateway.amazon.errors import AmazonGatewayError
-from hiicart.gateway.amazon.settings import default_settings
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
+from hiicart.gateway.amazon.settings import SETTINGS as default_settings
+from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
 
 LIVE_CBUI_URL = "https://authorize.payments.amazon.com/cobranded-ui/actions/start"
 TEST_CBUI_URL = "https://authorize.payments-sandbox.amazon.com/cobranded-ui/actions/start"
@@ -54,7 +53,7 @@ class AmazonGateway(PaymentGatewayBase):
             values["pipelineName"] = "SingleUse"
         else:
             if cart.recurringlineitems.count() > 1:
-                raise AmazonGatewayError("Only one recurring lineitem per cart.")
+                raise GatewayError("Only one recurring lineitem per cart.")
             recurring = cart.recurringlineitems.all()[0]
             values["pipelineName"] = "Recurring"
             values["recurringPeriod"] = "%s %s" % (

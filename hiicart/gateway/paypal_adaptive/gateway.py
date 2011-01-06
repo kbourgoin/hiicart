@@ -5,10 +5,9 @@ import urllib
 from decimal import Decimal
 from django.core.urlresolvers import reverse
 
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
+from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
 from hiicart.gateway.paypal_adaptive import api
-from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
-from hiicart.gateway.paypal_adaptive.settings import default_settings
+from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
 
 POST_URL = "https://www.paypal.com/cgi-bin/webscr"
 POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
@@ -24,7 +23,7 @@ class PaypalAPGateway(PaymentGatewayBase):
     def ipn_url(self):
         if "IPN_URL" not in self.settings:
             if "BASE_URL" not in self.settings:
-                raise PaypalAPGatewayError(
+                raise GatewayError(
                         "Either IPN_URL or BASE_URL is required.")
             # Import here to avoid circular import
             from hiicart.gateway.paypal_adaptive.views import ipn
@@ -42,11 +41,11 @@ class PaypalAPGateway(PaymentGatewayBase):
 
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""
-        raise PaypalAPGatewayError("Adaptive Payments doesn't support recurring payments.")
+        raise GatewayError("Adaptive Payments doesn't support recurring payments.")
 
     def charge_recurring(self, cart, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
-        raise PaypalAPGatewayError("Adaptive Payments doesn't support recurring payments.")
+        raise GatewayError("Adaptive Payments doesn't support recurring payments.")
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""
@@ -55,7 +54,7 @@ class PaypalAPGateway(PaymentGatewayBase):
     def submit(self, cart, collect_address=False):
         """Submit the cart to the Paypal Adaptive Payments API"""
         if cart.recurringlineitems.count() > 0:
-            raise PaypalAPGatewayError("Adaptive Payments doesn't support recurring payments.")
+            raise GatewayError("Adaptive Payments doesn't support recurring payments.")
         self._update_with_cart_settings(cart)
         params = {"actionType": "PAY",
                   "currencyCode": "USD",

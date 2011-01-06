@@ -1,33 +1,33 @@
 import logging
 import os
 
-from django.conf import settings
-
 from hiicart.models import Payment
+from hiicart.settings import SETTINGS as settings
 from hiicart.utils import call_func
 
 class GatewayError(Exception):
     pass
 
-# Should these have a common base class? Seems excessive vs. code duplication.
-
 class _SharedBase(object):
-    """Shared base class between IPNs and Gateways that accommodates their significant shared functionality."""
+    """Shared base class between IPNs and Gateways
+    
+    Created because they have significant overlapping functionality.
+    """
 
     def __init__(self, name, default_settings={}):
+        """Initalize logger and settings.
+
+        Duplicate settings are overwritten according to priority according to
+        the following ascending priority:
+        global -> gateway defined in HIICART_SETTINGS -> default_settings
+        """
         self.name = name.upper()
         self.log = logging.getLogger("hiicart.gateway." + self.name)
-        if self.name not in settings.HIICART_SETTINGS:
-            raise GatewayError("Settings not defined for %s" % self.name)
-        self.settings = default_settings.copy()
-        self.settings.update(settings.HIICART_SETTINGS[self.name])
-        # Copy down some settings, if not overridden locally
-        if "LIVE" not in self.settings: # app-level setting with gateway-level override
-            self.settings["LIVE"] = settings.HIICART_SETTINGS["LIVE"]
-        if "EXPIRATION_GRACE_PERIOD" not in self.settings and "EXPIRATION_GRACE_PERIOD" in settings.HIICART_SETTINGS:
-            self.settings["EXPIRATION_GRACE_PERIOD"] = settings.HIICART_SETTINGS["EXPIRATION_GRACE_PERIOD"]
-        if "CHARGE_RECURRING_GRACE_PERIOD" not in self.settings and "CHARGE_RECURRING_GRACE_PERIOD" in settings.HIICART_SETTINGS:
-            self.settings["CHARGE_RECURRING_GRACE_PERIOD"] = settings.HIICART_SETTINGS["CHARGE_RECURRING_GRACE_PERIOD"]
+        self.settings = settings.copy()
+        if self.name in self.settings:
+            self.settings.update(settings[self.name])
+        self.settings.update(default_settings)
+        self._settings_base = self.settings.copy()
 
     def _create_payment(self, cart, amount, transaction_id, state):
         """Record a payment."""
@@ -36,14 +36,16 @@ class _SharedBase(object):
         pmnt.save()
         return pmnt
 
-    def _update_with_cart_settings(self, hiicart):
+    def _update_with_cart_settings(self, cart):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
-        if not settings.HIICART_SETTINGS.get("CART_SETTINGS_FN", False):
-            return
-        s = call_func(settings.HIICART_SETTINGS["CART_SETTINGS_FN"], hiicart)
-        self.settings.update(s)
+        if settings["CART_SETTINGS_FN"]:
+            s = call_func(settings["CART_SETTINGS_FN"], cart)
+            if s:
+                self.settings.update(s)
+                return
+        self.settings = self._settings_base.copy() # reset to defaults
 
     def _require_files(self, filenames):
         """Verify a file exists on disk. Usually use for key files."""
@@ -55,10 +57,10 @@ class _SharedBase(object):
             raise GatewayError("The following files are required for %s: %s" % (
                                 self.name, ", ".join(errors)))
 
-    def _require_settings(self, settings):
+    def _require_settings(self, required_settings):
         """Verify that certain settings exist, raising an error if not."""
         errors = []
-        for setting in settings:
+        for setting in required_settings:
             if setting not in self.settings:
                 errors.append(setting)
         if len(errors) > 0:
