@@ -9,8 +9,7 @@ from django.utils.http import urlencode
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
-from hiicart.gateway.paypal.errors import PaypalGatewayError
+from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
 from hiicart.gateway.paypal.settings import SETTINGS as default_settings
 
 PAYMENT_CMD = {
@@ -52,7 +51,7 @@ class PaypalGateway(PaymentGatewayBase):
             try:
                 import M2Crypto
             except ImportError:
-                raise PaypalGatewayError("paypal_gateway: You must install M2Crypto to use an encrypted PayPal form.")
+                raise GatewayError("paypal_gateway: You must install M2Crypto to use an encrypted PayPal form.")
 
     @property
     def submit_url(self):
@@ -132,12 +131,12 @@ class PaypalGateway(PaymentGatewayBase):
             submit["no_note"] = NO_NOTE["YES"]
             submit["bn"] = "PP-SubscriptionsBF"
             if item.trial and item.recurring_start:
-                raise PaypalGatewayError("PayPal can't have trial and delayed start")
+                raise GatewayError("PayPal can't have trial and delayed start")
             if item.recurring_start:
                 delay = item.recurring_start - datetime.now()
                 delay += timedelta(days=1) # Round up 1 day to PP shows right start
                 if delay.days > 90:
-                    raise PaypalGatewayError("PayPal doesn't support a delayed start of more than 90 days.")
+                    raise GatewayError("PayPal doesn't support a delayed start of more than 90 days.")
                 # Delayed subscription starts
                 submit["a1"] = "0"
                 submit["p1"] = delay.days

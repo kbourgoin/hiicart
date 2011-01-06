@@ -11,7 +11,6 @@ from django.utils.translation import ugettext as _
 
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal.settings import SETTINGS as default_settings
-from hiicart.gateway.paypal.errors import PaypalGatewayError
 from hiicart.models import HiiCart, Payment
 
 POST_URL = "https://www.paypal.com/cgi-bin/webscr"

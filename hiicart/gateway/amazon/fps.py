@@ -20,7 +20,6 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 from urllib2 import HTTPError
 
-from hiicart.gateway.amazon.errors import AmazonGatewayError
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 
 LIVE_FPS_URL = "https://fps.amazonaws.com/"

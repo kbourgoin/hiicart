@@ -6,8 +6,8 @@ from django.template import RequestContext
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
+from hiicart.gateway.base.models import GatewayError
 from hiicart.gateway.paypal.ipn import PaypalIPN
-from hiicart.gateway.paypal.errors import PaypalGatewayError
 from hiicart.models import HiiCart, Payment
 from hiicart.utils import format_exceptions
 
@@ -32,7 +32,7 @@ def ipn(request):
     handler = PaypalIPN()
     if not handler.confirm_ipn_data(request.raw_post_data):
         log.error("Paypal IPN Confirmation Failed.")
-        raise PaypalGatewayError("Paypal IPN Confirmation Failed.")
+        raise GatewayError("Paypal IPN Confirmation Failed.")
     txn_type = data.get("txn_type", "")
     status = data.get("payment_status", "unknown")
     if txn_type == "subscr_cancel" or txn_type == "subscr_eot":
