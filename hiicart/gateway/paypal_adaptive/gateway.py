@@ -16,8 +16,9 @@ class PaypalAPGateway(PaymentGatewayBase):
     """Payment Gateway for Paypal Adaptive Payments."""
 
     def __init__(self):
-        super(PaypalAPGateway, self).__init__(
-                "paypal_adaptive", default_settings)
+        super(PaypalAPGateway, self).__init__("paypal_adaptive",
+                                              default_settings)
+        self._require_settings(["APP_ID", "PASSWORD", "SIGNATURE", "USERID"])
 
     @property
     def ipn_url(self):
@@ -46,6 +47,11 @@ class PaypalAPGateway(PaymentGatewayBase):
     def charge_recurring(self, cart, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
         raise GatewayError("Adaptive Payments doesn't support recurring payments.")
+
+    def is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Paypal to validate credentials
+        return True
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""

@@ -30,6 +30,7 @@ class AmazonGateway(PaymentGatewayBase):
 
     def __init__(self):
         super(AmazonGateway, self).__init__("amazon", default_settings)
+        self._require_settings(["AWS_KEY", "AWS_SECRET"])
 
     @property
     def _cbui_base_url(self):
@@ -114,6 +115,11 @@ class AmazonGateway(PaymentGatewayBase):
             item.recurring = False
             item.save()
         cart.update_state()
+
+    def is_valid(self):
+        """Return True if gateway is valid."""
+        #TODO: Query Amazon to validate credentials
+        return True
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""

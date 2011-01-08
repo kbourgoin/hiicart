@@ -25,8 +25,8 @@ class Paypal2Gateway(PaymentGatewayBase):
     """Payment Gateway for Paypal Website Payments Pro."""
 
     def __init__(self):
-        super(Paypal2Gateway, self).__init__(
-                "paypal2", default_settings)
+        super(Paypal2Gateway, self).__init__("paypal2", default_settings)
+        #self._require_settings([])
 
     @property
     def ipn_url(self):
@@ -58,6 +58,11 @@ class Paypal2Gateway(PaymentGatewayBase):
     def charge_recurring(self, cart, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
         pass
+
+    def is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Paypal to validate credentials
+        return True
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""

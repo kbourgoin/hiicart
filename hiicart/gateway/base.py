@@ -98,6 +98,12 @@ class PaymentGatewayBase(_SharedBase):
         """
         raise NotImplementedError
 
+    def is_valid(self):
+        """Returns True if the gateway is set up properly.
+        NOTE: Will return Fase if using cart-specific settings and omitting
+        required settings from global definition."""
+        raise NotImplementedError
+
     def sanitize_clone(self, cart):
         """Remove any gateway-specific changes to a cloned cart."""
         raise NotImplementedError

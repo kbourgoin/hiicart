@@ -70,6 +70,11 @@ class GoogleGateway(PaymentGatewayBase):
         return base64.b64encode("%s:%s" % (self.settings["MERCHANT_ID"],
                                            self.settings["MERCHANT_KEY"]))
 
+    def is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Google to validate credentials
+        return True
+
     def sanitize_clone(self, cart):
         """Remove any gateway-specific changes to a cloned cart."""
         pass

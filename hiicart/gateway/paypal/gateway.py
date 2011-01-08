@@ -200,6 +200,10 @@ class PaypalGateway(PaymentGatewayBase):
         """This Paypal API doesn't support manually charging subscriptions."""
         pass
 
+    def is_valid(self):
+        """Return True if gateway is valid."""
+        return True
+
     def sanitize_clone(self, cart):
         """Nothing to fix here."""
         pass
