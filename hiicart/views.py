@@ -1,11 +1,11 @@
-from django.conf import settings
 from django.http import HttpResponseRedirect
 
 from hiicart.models import HiiCart
+from hiicart.settings import SETTINGS as settings
 
 def complete(request):
     """View to handle redirection after a cart is completed."""
-    next = settings.HIICART_SETTINGS.get("CART_COMPLETE", "/")
+    next = settings["CART_COMPLETE"] or  "/"
     cartid = request.session.get("cartid", None)
     if cartid:
         cart = HiiCart.objects.get(pk=cartid)

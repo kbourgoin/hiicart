@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
-from hiicart.gateway.google.errors import GoogleGatewayError
+from hiicart.gateway.base.models import GatewayError
 from hiicart.gateway.google.gateway import GoogleGateway
 from hiicart.gateway.google.ipn import GoogleIPN 
 from hiicart.utils import format_exceptions, call_func
@@ -57,7 +57,7 @@ def ipn(request):
     elif type == "cancelled-subscription-notification":
         handler.cancelled_subscription(data)
     else:
-        raise GoogleGatewayError("google gateway: Unknown message type recieved: %s" % type)
+        raise GatewayError("google gateway: Unknown message type recieved: %s" % type)
     # Return ack so google knows we handled the message
     ack = "<notification-acknowledgment xmlns='http://checkout.google.com/schema/2' serial-number='%s'/>" %  data["serial-number"].strip()
     response = HttpResponse(content=ack, content_type="text/xml; charset=UTF-8")

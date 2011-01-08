@@ -7,7 +7,6 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
 from hiicart.gateway.amazon import fps
-from hiicart.gateway.amazon.errors import AmazonGatewayError
 from hiicart.gateway.amazon.ipn import AmazonIPN 
 from hiicart.gateway.countries import COUNTRIES
 from hiicart.models import HiiCart

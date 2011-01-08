@@ -9,9 +9,8 @@ from django.utils.http import urlencode
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
-from hiicart.gateway.paypal.errors import PaypalGatewayError
-from hiicart.gateway.paypal.settings import default_settings
+from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
+from hiicart.gateway.paypal.settings import SETTINGS as default_settings
 
 PAYMENT_CMD = {
     "BUY_NOW" : "_xclick",
@@ -52,7 +51,7 @@ class PaypalGateway(PaymentGatewayBase):
             try:
                 import M2Crypto
             except ImportError:
-                raise PaypalGatewayError("paypal_gateway: You must install M2Crypto to use an encrypted PayPal form.")
+                raise GatewayError("paypal_gateway: You must install M2Crypto to use an encrypted PayPal form.")
 
     @property
     def submit_url(self):
@@ -60,14 +59,6 @@ class PaypalGateway(PaymentGatewayBase):
             url = POST_URL
         else:
             url = POST_TEST_URL
-        return mark_safe(url)
-
-    @property
-    def submit_button_url(self, cart):
-        if cart.recurringlineitems.count() > 0:
-            url = self.settings["SUBSCRIBE_BUTTON_URL"]
-        else:
-            url = self.settings["BUY_BUTTON_URL"]
         return mark_safe(url)
 
     def _encrypt_data(self, data):
@@ -140,12 +131,12 @@ class PaypalGateway(PaymentGatewayBase):
             submit["no_note"] = NO_NOTE["YES"]
             submit["bn"] = "PP-SubscriptionsBF"
             if item.trial and item.recurring_start:
-                raise PaypalGatewayError("PayPal can't have trial and delayed start")
+                raise GatewayError("PayPal can't have trial and delayed start")
             if item.recurring_start:
                 delay = item.recurring_start - datetime.now()
                 delay += timedelta(days=1) # Round up 1 day to PP shows right start
                 if delay.days > 90:
-                    raise PaypalGatewayError("PayPal doesn't support a delayed start of more than 90 days.")
+                    raise GatewayError("PayPal doesn't support a delayed start of more than 90 days.")
                 # Delayed subscription starts
                 submit["a1"] = "0"
                 submit["p1"] = delay.days
@@ -200,7 +191,6 @@ class PaypalGateway(PaymentGatewayBase):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         self._update_with_cart_settings(cart)
         alias = self.settings["BUSINESS"]
-        button_url = self.settings["UNSUBSCRIBE_BUTTON_URL"]
         url = "%s?cmd=%s&alias=%s" % (self.submit_url, 
                                       PAYMENT_CMD["UNSUBSCRIBE"],
                                       self.settings["BUSINESS"])

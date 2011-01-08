@@ -6,8 +6,7 @@ import xml.etree.cElementTree as ET
 from django.template import Context, loader
 
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
-from hiicart.gateway.google.errors import GoogleGatewayError
-from hiicart.gateway.google.settings import default_settings
+from hiicart.gateway.google.settings import SETTINGS as default_settings
 
 class GoogleGateway(PaymentGatewayBase):
     """Payment Gateway for Google Checkout."""
