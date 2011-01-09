@@ -44,6 +44,12 @@ cart-speficic settings.  To use this, set CART_SETTINGS_FN to the name of a
 function that returns a settings dict for any cart passed to it.  This dict
 should contain any gateway-specific settings (key, pass, etc.) to be used
 only for that cart.
+
+**About Cart-Complete**
+
+This remains a largely incomplete idea.  The goal was to have all return pages
+go to HiiCart, which would then redirect based on this setting.  This would
+obviate the need for each gateway to have a setting for the return url.
 """
 
 import logging
