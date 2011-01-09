@@ -1,0 +1,43 @@
+<html>
+    <head><title>HiiCart Example App</title></head>
+    <body>
+        <h1>HiiCart Basic Integration</h1>
+        <div id="current_info">
+            <h2>Current Setup</h2>
+            <table>
+                <tr>
+                    <th>Gateway</th>
+                    <th>Credentials</th>
+                    <th>Status</th>
+                </tr>
+                <tr>
+                    <td>paypal</td>
+                    <td><pre>{{ paypal.0 }}</pre></td>
+                    <td class="{{ paypal.1 }}">{{ paypal.1 }}</td>
+                </tr>
+                <tr>
+                    <td>paypal2</td>
+                    <td><pre>{{ paypal2.0 }}</pre></td>
+                    <td class="{{ paypal2.1 }}">{{ paypal2.1 }}</td>
+                </tr>
+                <tr>
+                    <td>paypal_adaptive</td>
+                    <td><pre>{{ paypal_adaptive.0 }}</pre></td>
+                    <td class="{{ paypal_adaptive.1 }}">{{ paypal_adaptive.1 }}</td>
+                </tr>
+                <tr>
+                    <td>google</td>
+                    <td><pre>{{ google.0 }}</pre></td>
+                    <td class="{{ google.1 }}">{{ google.1 }}</td>
+                </tr>
+                <tr>
+                    <td>amazon</td>
+                    <td><pre>{{ amazon.0 }}</pre></td>
+                    <td class="{{ amazon.1 }}">{{ amazon.1 }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="test_purchase">
+        </div>
+    </body>
+</html>

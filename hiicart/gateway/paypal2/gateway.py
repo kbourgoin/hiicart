@@ -40,6 +40,11 @@ class Paypal2Gateway(PaymentGatewayBase):
         else:
             return self.settings["IPN_URL"]
 
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Paypal to validate credentials
+        return True
+
     def _send_command(self, params):
         keys = params.keys()
         keys.sort()
@@ -58,11 +63,6 @@ class Paypal2Gateway(PaymentGatewayBase):
     def charge_recurring(self, cart, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
         pass
-
-    def is_valid(self):
-        """Return True if gateway is valid."""
-        # TODO: Query Paypal to validate credentials
-        return True
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""

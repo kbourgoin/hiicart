@@ -79,6 +79,11 @@ class AmazonGateway(PaymentGatewayBase):
             methods.append("ABT")
         return ",".join(methods)
 
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        #TODO: Query Amazon to validate credentials
+        return True
+
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""
         if cart.recurringlineitems.count() == 0:
@@ -115,11 +120,6 @@ class AmazonGateway(PaymentGatewayBase):
             item.recurring = False
             item.save()
         cart.update_state()
-
-    def is_valid(self):
-        """Return True if gateway is valid."""
-        #TODO: Query Amazon to validate credentials
-        return True
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""

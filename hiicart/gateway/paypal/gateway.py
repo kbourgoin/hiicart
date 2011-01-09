@@ -187,6 +187,11 @@ class PaypalGateway(PaymentGatewayBase):
                 submit["state"] = cart.bill_state
         return submit
 
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # Can't validate credentials with Paypal AFAIK
+        return True
+
     def cancel_recurring(self, cart):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         self._update_with_cart_settings(cart)
@@ -199,10 +204,6 @@ class PaypalGateway(PaymentGatewayBase):
     def charge_recurring(self, cart, grace_period=None):
         """This Paypal API doesn't support manually charging subscriptions."""
         pass
-
-    def is_valid(self):
-        """Return True if gateway is valid."""
-        return True
 
     def sanitize_clone(self, cart):
         """Nothing to fix here."""
