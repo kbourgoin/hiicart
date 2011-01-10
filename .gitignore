@@ -7,4 +7,5 @@ build
 dist
 *.egg-info
 temp
-example/example.db
+example/exampledb
+*.swp
