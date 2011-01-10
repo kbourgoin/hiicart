@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
-from hiicart.gateway.base.models import GatewayError
+from hiicart.gateway.base import GatewayError
 from hiicart.gateway.google.gateway import GoogleGateway
 from hiicart.gateway.google.ipn import GoogleIPN 
 from hiicart.utils import format_exceptions, call_func
@@ -27,7 +27,7 @@ def ipn(request):
     log.info("IPN Notification received from Google Checkout: %s" % data)
     # Check credentials
     gateway = GoogleGateway()
-    if "IPN_AUTH_VALS" in gateway.settings:
+    if gateway.settings.get("IPN_AUTH_VALS", False):
         mine = call_func(gateway.settings["IPN_AUTH_VALS"])
     else:
         mine = gateway.get_basic_auth()

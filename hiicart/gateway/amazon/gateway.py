@@ -30,6 +30,7 @@ class AmazonGateway(PaymentGatewayBase):
 
     def __init__(self):
         super(AmazonGateway, self).__init__("amazon", default_settings)
+        self._require_settings(["AWS_KEY", "AWS_SECRET"])
 
     @property
     def _cbui_base_url(self):
@@ -77,6 +78,11 @@ class AmazonGateway(PaymentGatewayBase):
         if self.settings["ACCEPT_ABT"]:
             methods.append("ABT")
         return ",".join(methods)
+
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        #TODO: Query Amazon to validate credentials
+        return True
 
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""

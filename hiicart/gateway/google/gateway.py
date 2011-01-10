@@ -33,6 +33,11 @@ class GoogleGateway(PaymentGatewayBase):
             base = "https://sandbox.google.com/checkout/api/checkout/v2/requestForm/Merchant/%s"
         return base % self.settings["MERCHANT_ID"]
 
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Google to validate credentials
+        return True
+
     def _send_command(self, url, params):
         """Send a command to the Checkout Order Processing API."""
         http = httplib2.Http()

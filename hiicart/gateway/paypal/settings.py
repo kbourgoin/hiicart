@@ -19,14 +19,10 @@
 
 """
 SETTINGS = { 
-    "BUSINESS" : None,
     "CURRENCY_CODE" : "USD",
     "RETURN_ADDRESS" : None,
     "LOCALE" : "US",
     "REATTEMPT" : True,
     "ENCRYPT" : False,
-    "PRIVATE_KEY": "",
-    "PUBLIC_KEY" : "",
-    "PUBLIC_CERT_ID" : "",
     "IPN_URL" : "",
     }

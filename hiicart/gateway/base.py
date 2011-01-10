@@ -61,7 +61,7 @@ class _SharedBase(object):
         """Verify that certain settings exist, raising an error if not."""
         errors = []
         for setting in required_settings:
-            if setting not in self.settings:
+            if not self.settings.get(setting, False):
                 errors.append(setting)
         if len(errors) > 0:
             raise GatewayError("The following settings are required for %s: %s" % (
@@ -83,6 +83,12 @@ class PaymentGatewayBase(_SharedBase):
 
     Provides a common interface for working with all payment gateways.
     """
+    def _is_valid(self):
+        """Returns True if the gateway is set up properly.
+        NOTE: Will return Fase if using cart-specific settings and omitting
+        required settings from global definition."""
+        raise NotImplementedError
+
     def cancel_recurring(self, cart):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         raise NotImplementedError

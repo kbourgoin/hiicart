@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
-from hiicart.gateway.base import GatewayError
+from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
 from hiicart.gateway.paypal_adaptive.ipn import PaypalAPIPN
 from hiicart.models import HiiCart
 from hiicart.utils import format_exceptions
@@ -33,7 +33,7 @@ def ipn(request):
     ipn = PaypalAPIPN()
     if not ipn.confirm_ipn_data(request.raw_post_data):
         log.error("Paypal IPN Confirmation Failed.")
-        raise GatewayError("Paypal IPN Confirmation Failed.")
+        raise PaypalGatewayError("Paypal IPN Confirmation Failed.")
     if "transaction_type" in data: # Parallel/Chained Payment initiation IPN.
         if data["transaction_type"] == "Adaptive Payment PAY":
             ipn.accept_adaptive_payment(data)
@@ -46,5 +46,5 @@ def ipn(request):
             log.info("Unknown txn_type: %s" % data["txn_type"])
     else: #dunno
         log.error("transaction_type not in IPN data.")
-        raise GatewayError("transaction_type not in IPN.")
+        raise PaypalAPGatewayError("transaction_type not in IPN.")
     return HttpResponse()

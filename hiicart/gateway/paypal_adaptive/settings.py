@@ -22,13 +22,8 @@
 """
 
 SETTINGS = {
-    "APP_ID": None,
     "BASE_URL": None,
     "CANCEL_URL": None,
     "IPN_URL": None,
-    "PASSWORD": None,
-    "RECEIVERS": [],
     "RETURN_URL": None,
-    "SIGNATURE": None,
-    "USERID": None,
 }

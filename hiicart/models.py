@@ -15,18 +15,18 @@ from django.db.models.fields import DecimalField
 from django.utils.safestring import mark_safe
 from logging.handlers import RotatingFileHandler
 
-from hiicart.settings import SETTINGS as settings
+from hiicart.settings import SETTINGS as hiicart_settings
 
 log = logging.getLogger("hiicart.models")
 
 ### Set up library-wide logging
 
-if settings["LOG"]:
-    level = settings["LOG_LEVEL"]
+if hiicart_settings["LOG"]:
+    level = hiicart_settings["LOG_LEVEL"]
     logger = logging.getLogger("hiicart")
     logger.setLevel(level)
     ch = RotatingFileHandler(
-            settings["LOG"],
+            hiicart_settings["LOG"],
             maxBytes=5242880,
             backupCount=10,
             encoding="utf-8")
@@ -89,6 +89,7 @@ def _get_gateway(name):
     from hiicart.gateway.comp.gateway import CompGateway
     from hiicart.gateway.google.gateway import GoogleGateway
     from hiicart.gateway.paypal.gateway import PaypalGateway
+    from hiicart.gateway.paypal2.gateway import Paypal2Gateway
     from hiicart.gateway.paypal_adaptive.gateway import PaypalAPGateway
     if name == "amazon":
         return AmazonGateway()
@@ -98,6 +99,8 @@ def _get_gateway(name):
         return GoogleGateway()
     elif name == "paypal":
         return PaypalGateway()
+    elif name == "paypal2":
+        return Paypal2Gateway()
     elif name == "paypal_adaptive":
         return PaypalAPGateway()
     else:
@@ -106,7 +109,7 @@ def _get_gateway(name):
 ### Models
 
 # Stop CASCADE ON DELETE with User, but keep compatibility with django < 1.3
-if django.VERSION[1] >= 3 and settings["KEEP_ON_USER_DELETE"]:
+if django.VERSION[1] >= 3 and hiicart_settings["KEEP_ON_USER_DELETE"]:
     _user_delete_behavior = models.SET_NULL
 else:
     _user_delete_behavior = None 
@@ -212,7 +215,7 @@ class HiiCart(models.Model):
         * Dev only because it doesn't actually change when Google or PP
           will bill the subscription next.
         """
-        if settings["LIVE"]:
+        if hiicart_settings["LIVE"]:
             raise HiiCartError("Development only functionality.")
         if self.state != "PENDCANCEL" and self.state != "RECURRING":
             return
@@ -513,5 +516,5 @@ class RecurringLineItem(LineItemBase):
         """Get subscription expiration based on last payment optionally providing a grace period."""
         if grace_period:
             return datetime.now() > self.get_expiration() + grace_period
-        elif settings["EXPIRATION_GRACE_PERIOD"]:
-            return datetime.now() > self.get_expiration() + settings["EXPIRATION_GRACE_PERIOD"]
+        elif hiicart_settings["EXPIRATION_GRACE_PERIOD"]:
+            return datetime.now() > self.get_expiration() + hiicart_settings["EXPIRATION_GRACE_PERIOD"]

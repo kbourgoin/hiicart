@@ -16,8 +16,9 @@ class PaypalAPGateway(PaymentGatewayBase):
     """Payment Gateway for Paypal Adaptive Payments."""
 
     def __init__(self):
-        super(PaypalAPGateway, self).__init__(
-                "paypal_adaptive", default_settings)
+        super(PaypalAPGateway, self).__init__("paypal_adaptive",
+                                              default_settings)
+        self._require_settings(["APP_ID", "PASSWORD", "SIGNATURE", "USERID"])
 
     @property
     def ipn_url(self):
@@ -38,6 +39,11 @@ class PaypalAPGateway(PaymentGatewayBase):
         else:
             url = POST_TEST_URL
         return url
+
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Paypal to validate credentials
+        return True
 
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""
