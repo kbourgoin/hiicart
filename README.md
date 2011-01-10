@@ -24,3 +24,10 @@ Once set up, create LineItem and HiiCart objects to submit payments:
         return cart.submit("google")
 
 This returns an object containing the redirect URL for you user.
+
+Example App
+-----------
+
+An example app is included that shows very generally how to get everything set
+up and working. Right now it really needs a lot of work, but is functional for
+the most basic case.
