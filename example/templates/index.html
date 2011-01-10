@@ -37,7 +37,41 @@
                 </tr>
             </table>
         </div>
-        <div class="test_purchase">
+        <div id="test_purchase">
+            <h2>Make a Test Purchase</h2>
+            <form action="/" method="POST">
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Add to Cart</th>
+                </tr>
+                <tr>
+                    <td>Fancy Pants</td>
+                    <td>Some super special fancy pants, for fancy people</td>
+                    <td>$19.99</td>
+                    <td>{{ form.fancypants }}</td>
+                </tr>
+                <tr>
+                    <td>Monkey Butler</td>
+                    <td>A monkey butler of your own.</td>
+                    <td>$1,000.00</td>
+                    <td>{{ form.monkeybutler }}</td>
+                </tr>
+                <tr>
+                    <td>Magazine Subscription</td>
+                    <td>Subscribed to our latest newsletter. It's great!</td>
+                    <td>$5/month</td>
+                    <td>{{ form.subscription }}</td>
+                </tr>
+            </table>
+            {{ form.errors.as_ul }}
+            <div id="payment">
+                <span>Checkout using:</span>
+                <span>{{ form.gateway }}</span>
+                <input type="submit" value="buy"/>
+            </div>
         </div>
     </body>
 </html>
