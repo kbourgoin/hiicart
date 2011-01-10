@@ -2,7 +2,7 @@ import logging
 import os
 
 from hiicart.models import Payment
-from hiicart.settings import SETTINGS as settings
+from hiicart.settings import SETTINGS as hiicart_settings
 from hiicart.utils import call_func
 
 class GatewayError(Exception):
@@ -19,14 +19,14 @@ class _SharedBase(object):
 
         Duplicate settings are overwritten according to priority according to
         the following ascending priority:
-        global -> gateway defined in HIICART_SETTINGS -> default_settings
+        default_settings -> global -> gateway defined in HIICART_SETTINGS
         """
         self.name = name.upper()
         self.log = logging.getLogger("hiicart.gateway." + self.name)
-        self.settings = settings.copy()
+        self.settings = default_settings
+        self.settings.update(hiicart_settings)
         if self.name in self.settings:
-            self.settings.update(settings[self.name])
-        self.settings.update(default_settings)
+            self.settings.update(hiicart_settings[self.name])
         self._settings_base = self.settings.copy()
 
     def _create_payment(self, cart, amount, transaction_id, state):
@@ -40,8 +40,8 @@ class _SharedBase(object):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
-        if settings["CART_SETTINGS_FN"]:
-            s = call_func(settings["CART_SETTINGS_FN"], cart)
+        if hiicart_settings["CART_SETTINGS_FN"]:
+            s = call_func(hiicart_settings["CART_SETTINGS_FN"], cart)
             if s:
                 self.settings.update(s)
                 return

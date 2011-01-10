@@ -14,7 +14,7 @@ from urllib import unquote
 
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 from hiicart.gateway.paypal2.errors import Paypal2GatewayError
-from hiicart.gateway.paypal2.settings import default_settings
+from hiicart.gateway.paypal2.settings import SETTINGS as default_settings
 
 LIVE_ENDPOINT = "https://api-3t.paypal.com/nvp"
 LIVE_REDIRECT = "https://www.paypal.com/cgi-bin/webscr"
@@ -26,7 +26,7 @@ class Paypal2Gateway(PaymentGatewayBase):
 
     def __init__(self):
         super(Paypal2Gateway, self).__init__("paypal2", default_settings)
-        #self._require_settings([])
+        self._require_settings(["PASSWORD", "SIGNATURE", "USERID", "SELLER_EMAIL"])
 
     @property
     def ipn_url(self):
@@ -85,7 +85,7 @@ class Paypal2Gateway(PaymentGatewayBase):
                   "PAYMENTREQUEST_0_MAXAMT": cart.total,
                   "PAYMENTREQUEST_0_NOTIFYURL": self.ipn_url,
                   "PAYMENTREQUEST_0_PAYMENTACTION": "Sale",
-                  "PAYMENTREQUEST_0_SELLERPAYPALACCOUNTID": self.settings["EMAIL"],
+                  "PAYMENTREQUEST_0_SELLERPAYPALACCOUNTID": self.settings["SELLER_EMAIL"],
                 }
         if cart.lineitems.count() > 0:
             params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
@@ -109,7 +109,6 @@ class Paypal2Gateway(PaymentGatewayBase):
         params["PWD"] = self.settings["PASSWORD"]
         params["SIGNATURE"] = self.settings["SIGNATURE"]
         result = self._send_command(params)
-        import pdb; pdb.set_trace()
         params = urllib.urlencode({"cmd": "_express-checkout",
                                    "token": result['TOKEN']})
         url = LIVE_REDIRECT if self.settings["LIVE"] else SANDBOX_REDIRECT

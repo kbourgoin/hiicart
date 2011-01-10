@@ -82,6 +82,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'example.urls'
 
 TEMPLATE_DIRS = (
+    'templates',
 )
 
 INSTALLED_APPS = (
@@ -138,6 +139,7 @@ HIICART_SETTINGS = {
         'RETURN_URL':                   '',
         'CANCEL_URL':                   '',
         'IPN_URL':                      '',
+        'SELLER_EMAIL':                 '',
         },
     'AMAZON': {
         'AWS_KEY':                      '',
