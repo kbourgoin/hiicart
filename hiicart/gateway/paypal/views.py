@@ -6,7 +6,7 @@ from django.template import RequestContext
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
-from hiicart.gateway.base import GatewayError
+from hiicart.gateway.base.models import GatewayError
 from hiicart.gateway.paypal.ipn import PaypalIPN
 from hiicart.models import HiiCart, Payment
 from hiicart.utils import format_exceptions
