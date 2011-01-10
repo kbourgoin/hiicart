@@ -27,7 +27,7 @@ def ipn(request):
     log.info("IPN Notification received from Google Checkout: %s" % data)
     # Check credentials
     gateway = GoogleGateway()
-    if "IPN_AUTH_VALS" in gateway.settings:
+    if gateway.settings.get("IPN_AUTH_VALS", False):
         mine = call_func(gateway.settings["IPN_AUTH_VALS"])
     else:
         mine = gateway.get_basic_auth()
