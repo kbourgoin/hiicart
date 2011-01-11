@@ -1,13 +1,14 @@
 import logging
 import pprint
-import xml.etree.cElementTree as ET
+import urllib
 
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
-from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
-from hiicart.gateway.paypal_adaptive.ipn import PaypalAPIPN
+from hiicart.gateway.base import GatewayError
+from hiicart.gateway.paypal2 import api
+from hiicart.gateway.paypal2.ipn import Paypal2IPN
 from hiicart.models import HiiCart
 from hiicart.utils import format_exceptions
 
@@ -33,7 +34,7 @@ def ipn(request):
     ipn = PaypalAPIPN()
     if not ipn.confirm_ipn_data(request.raw_post_data):
         log.error("Paypal IPN Confirmation Failed.")
-        raise PaypalGatewayError("Paypal IPN Confirmation Failed.")
+        raise GatewayError("Paypal IPN Confirmation Failed.")
     if "transaction_type" in data: # Parallel/Chained Payment initiation IPN.
         if data["transaction_type"] == "Adaptive Payment PAY":
             ipn.accept_adaptive_payment(data)
@@ -46,5 +47,33 @@ def ipn(request):
             log.info("Unknown txn_type: %s" % data["txn_type"])
     else: #dunno
         log.error("transaction_type not in IPN data.")
-        raise PaypalAPGatewayError("transaction_type not in IPN.")
+        raise GatewayError("transaction_type not in IPN.")
     return HttpResponse()
+
+@csrf_view_exempt
+@format_exceptions
+@never_cache
+def authorized(request):
+    if "token" not in request.GET:
+        raise Http404
+    ipn = Paypal2IPN()
+    info = api.get_express_details(request.GET["token"], ipn.settings)
+    params = request.GET.copy()
+    params["cart"] = info["INVNUM"]
+    url = "%s?%s" % (ipn.settings["RECEIPT_URL"], urllib.urlencode(params))
+    import pdb; pdb.set_trace()
+    return HttpResponseRedirect(url)
+
+@csrf_view_exempt
+@format_exceptions
+@never_cache
+def do_pay(request):
+    if "token" not in request.POST or "PayerID" not in request.POST \
+        or "cart" not in request.POST:
+            raise GatewayError("Incorrect values POSTed to do_buy")
+    cart = HiiCart.objects.get(_cart_uuid=request.POST["cart"])
+    ipn = Paypal2IPN()
+    api.do_express_payment(request.POST["token"], request.POST["PayerID"],
+                           cart, ipn.settings)
+    #TODO: Redirect to HiiCart complete URL
+    return HttpResponseRedirect("/")

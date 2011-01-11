@@ -122,7 +122,7 @@ HIICART_SETTINGS = {
         'PAYPAL_PUBKEY':                '',
         },
     'PAYPAL_ADAPTIVE': {
-        #'BASE_URL':                     '',
+        'BASE_URL':                     '',
         'USERID':                       '',
         'PASSWORD':                     '',
         'SIGNATURE':                    '',
@@ -132,7 +132,7 @@ HIICART_SETTINGS = {
         'IPN_URL':                      '',
         },
     'PAYPAL2': {
-        #'BASE_URL':                     '',
+        'BASE_URL':                     '',
         'USERID':                       '',
         'PASSWORD':                     '',
         'SIGNATURE':                    '',
