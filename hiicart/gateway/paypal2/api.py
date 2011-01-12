@@ -52,8 +52,9 @@ def create_recurring_profile(token, payer_id, cart, settings):
                   "BILLINGPERIOD": "Month", #item.duration_unit,
                   "BILLINGFREQUENCY": item.duration,
                   "AMT": item.recurring_price,
-                  "CURRENCYCODE": "USD", # TODO: Make settings
+                  "CURRENCYCODE": "USD", # TODO: Make setting
                   "PAYERID": payer_id,
+                  "NOTIFYURL": _ipn_url(settings)
                   }
         result = _send_command(params, settings)
         if result.get("PROFILESTATUS", "") == "ActiveProfile":
