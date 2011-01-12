@@ -80,7 +80,14 @@ def do_express_payment(token, payer_id, cart, settings):
         params["L_PAYMENTREQUEST_0_DESC%i"%i] = item.description
         params["L_PAYMENTREQUEST_0_AMT%i"%i] = item.total.quantize(Decimal(".01"))
         params["L_PAYMENTREQUEST_0_NUMBER%i"] = item.sku
-    result =resultnd_command(params, settings)
+    result = _send_command(params, settings)
+    if result.get("PAYMENTINFO_0_PAYMENTSTATUS", "") == "Completed":
+        # TODO: This sucks. Consider changing IPNBase to APIBase so there's no ipn/api distincation in gateways
+        from ipn import Paypal2IPN
+        Paypal2IPN()._create_payment(cart, cart.total,
+                                     result["PAYMENTINFO_0_TRANSACTIONID"],
+                                     "PAID")
+        cart.update_state()
     return result
 
 def get_express_details(token, settings):
