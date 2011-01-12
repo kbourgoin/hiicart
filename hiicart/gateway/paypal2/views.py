@@ -73,7 +73,12 @@ def do_pay(request):
             raise GatewayError("Incorrect values POSTed to do_buy")
     cart = HiiCart.objects.get(_cart_uuid=request.POST["cart"])
     ipn = Paypal2IPN()
-    api.do_express_payment(request.POST["token"], request.POST["PayerID"],
-                           cart, ipn.settings)
-    #TODO: Redirect to HiiCart complete URL
+    if cart.lineitems.count() > 0:
+        api.do_express_payment(request.POST["token"], request.POST["PayerID"],
+                               cart, ipn.settings)
+    if cart.recurringlineitems.count() > 0:
+        api.create_recurring_profile(request.POST["token"],
+                                     request.POST["PayerID"],
+                                     cart, ipn.settings)
+    # TODO: Redirect to HiiCart complete URL
     return HttpResponseRedirect("/")

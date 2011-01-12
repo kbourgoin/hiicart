@@ -1,10 +1,11 @@
 """Functions to make calls to Paypal's NVP API."""
-# TODO: Make an object that gets its own settings (using _SharedBase?)
+# TODO: Make this an object that gets its own settings (using _SharedBase?)
 
 import httplib2
 import urllib
 import urllib2
 
+from datetime import datetime
 from decimal import Decimal
 from django.core.urlresolvers import reverse
 from urllib import unquote
@@ -13,7 +14,7 @@ LIVE_ENDPOINT = "https://api-3t.paypal.com/nvp"
 SANDBOX_ENDPOINT = "https://api-3t.sandbox.paypal.com/nvp"
 
 def _ipn_url(settings):
-    if "IPN_URL" not in settings:
+    if not settings["IPN_URL"]:
         if "BASE_URL" not in settings:
             raise GatewayError(
                     "Either IPN_URL or BASE_URL is required.")
@@ -39,7 +40,29 @@ def _send_command(params, settings):
     # TODO: logging
     return dict([(l,r) for l,r in [p.split('=') for p in data.split('&')]])
 
+def create_recurring_profile(token, payer_id, cart, settings):
+    """Call CreateRecurringPaymentsProfile for each recurringlineitem."""
+    # TODO: Trial Periods, Shipping (cost and address), Tax
+    for item in cart.recurringlineitems.all():
+        params = {"METHOD": "CreateRecurringPaymentsProfile",
+                  "TOKEN": token,
+                  "PROFILESTARTDATE": item.recurring_start or datetime.now(),
+                  "PROFILEREFERENCE": cart._cart_uuid,
+                  "DESC": item.description,
+                  "BILLINGPERIOD": "Month", #item.duration_unit,
+                  "BILLINGFREQUENCY": item.duration,
+                  "AMT": item.recurring_price,
+                  "CURRENCYCODE": "USD", # TODO: Make settings
+                  "PAYERID": payer_id,
+                  }
+        result = _send_command(params, settings)
+        if result.get("PROFILESTATUS", "") == "ActiveProfile":
+            item.is_active = True
+            item.save()
+    cart.update_state()
+
 def do_express_payment(token, payer_id, cart, settings):
+    """Call DoExpressCheckoutPayment for each lineitem."""
     params = {"METHOD": "DoExpressCheckoutPayment",
               "TOKEN": token,
               "PAYERID": payer_id,
@@ -51,27 +74,14 @@ def do_express_payment(token, payer_id, cart, settings):
               "PAYMENTREQUEST_0_PAYMENTACTION": "Sale",
               "PAYMENTREQUEST_0_SELLERPAYPALACCOUNTID": settings["SELLER_EMAIL"],
               }
-    if cart.lineitems.count() > 0:
-        params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
-        for i, item in enumerate(cart.lineitems.all()):
-            params["L_PAYMENTREQUEST_0_NAME%i"%i] = item.name
-            params["L_PAYMENTREQUEST_0_DESC%i"%i] = item.description
-            params["L_PAYMENTREQUEST_0_AMT%i"%i] = item.total.quantize(Decimal(".01"))
-            params["L_PAYMENTREQUEST_0_NUMBER%i"] = item.sku
-    else:
-        params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
-        for i, item in enumerate(cart.recurringlineitems.all()):
-            params["L_BILLINGTYPE%i"%i] = "RecurringPayments"
-            params["L_BILLINGAGREEMENTDESCRIPTION%i"%i] = item.description
-            #params["L_AMT%i"%i] = item.recurring_price.quantize(Decimal(".01"))
-            #params["L_PAYMENTREQUEST_0_NAME%i"%i] = item.name
-            #params["L_PAYMENTREQUEST_0_DESC%i"%i] = item.description
-            params["L_PAYMENTREQUEST_0_AMT%i"%i] = item.total.quantize(Decimal(".01"))
-            params["L_PAYMENTREQUEST_0_NUMBER%i"%i] = item.sku
-    import pdb; pdb.set_trace()
-    output = _send_command(params, settings)
-    return output
-
+    params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
+    for i, item in enumerate(cart.lineitems.all()):
+        params["L_PAYMENTREQUEST_0_NAME%i"%i] = item.name
+        params["L_PAYMENTREQUEST_0_DESC%i"%i] = item.description
+        params["L_PAYMENTREQUEST_0_AMT%i"%i] = item.total.quantize(Decimal(".01"))
+        params["L_PAYMENTREQUEST_0_NUMBER%i"] = item.sku
+    result =resultnd_command(params, settings)
+    return result
 
 def get_express_details(token, settings):
     """Use GetExpressCheckoutDetails to get information."""
