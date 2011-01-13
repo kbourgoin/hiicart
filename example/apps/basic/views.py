@@ -40,3 +40,12 @@ def index(request):
                          validate_gateway('amazon'))
     context['form'] = form
     return render_to_response('index.html', context)
+
+def paypal_receipt(request):
+    if 'cart' not in request.GET:
+        return HttpResponseRedirect('/')
+    context = {
+            'form' :  forms.PaypalReceiptForm(request.GET),
+            'cart': HiiCart.objects.get(_cart_uuid=request.GET['cart']),
+            }
+    return render_to_response('paypal_receipt.html', context)

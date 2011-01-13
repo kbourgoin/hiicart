@@ -34,3 +34,8 @@ class BasicPurchaseForm(forms.Form):
         if validate_gateway(self.cleaned_data['gateway']) != True:
             raise forms.ValidationError('Gateway not properly set up.')
         return self.cleaned_data['gateway']
+
+class PaypalReceiptForm(forms.Form):
+    token = forms.CharField(required=True, widget=forms.HiddenInput)
+    PayerID = forms.CharField(required=True, widget=forms.HiddenInput)
+    cart = forms.CharField(required=True, widget=forms.HiddenInput)
