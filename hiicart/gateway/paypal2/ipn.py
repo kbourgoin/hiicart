@@ -46,22 +46,13 @@ class Paypal2IPN(IPNBase):
         if not cart:
             self.log.warn("Unable to find purchase for IPN.")
             return
-        payment = self._create_payment(cart, data["mc_gross"],
+        payment = self._create_payment(cart, data["mc_gross_1"],
                                        transaction_id, "PAID")
         if data.get("note", False):
             payment.notes.create(text="Comment via IPN: \n%s" % data["note"])
-        # Fill in billing information. Consider any already in HiiCart correct
         cart.email = cart.email or data.get("payer_email", "")
         cart.first_name = cart.first_name or data.get("first_name", "")
         cart.last_name = cart.last_name or data.get("last_name", "")
-        street = data.get("address_street", "")
-        cart.bill_street1 = cart.bill_street1 or street.split("\r\n")[0]
-        if street.count("\r\n") > 0:
-            cart.bill_street2 = cart.bill_street2 or street.split("\r\n")[1]
-        cart.bill_city = cart.bill_city or data.get("address_city", "")
-        cart.bill_state = cart.bill_state or data.get("address_state", "")
-        cart.bill_postal_code = cart.bill_postal_code or data.get("address_zip", "")
-        cart.bill_country = cart.bill_country or data.get("address_country_code", "")
         cart.update_state()
         cart.save()
 

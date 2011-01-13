@@ -57,7 +57,6 @@ def authorized(request):
     params = request.GET.copy()
     params["cart"] = info["INVNUM"]
     url = "%s?%s" % (ipn.settings["RECEIPT_URL"], urllib.urlencode(params))
-    import pdb; pdb.set_trace()
     return HttpResponseRedirect(url)
 
 @csrf_view_exempt
