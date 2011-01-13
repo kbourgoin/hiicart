@@ -29,10 +29,13 @@ class Paypal2Gateway(PaymentGatewayBase):
 
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""
+        # TODO: Implement
         pass
 
     def charge_recurring(self, cart, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
+        # TODO: Investigate if this is necessary. I think Paypal still
+        #       takes care of the recurring charges.
         pass
 
     def sanitize_clone(self, cart):
