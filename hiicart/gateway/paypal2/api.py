@@ -41,7 +41,10 @@ def _send_command(params, settings):
     return dict([(l,r) for l,r in [p.split('=') for p in data.split('&')]])
 
 def create_recurring_profile(token, payer_id, cart, settings):
-    """Call CreateRecurringPaymentsProfile for each recurringlineitem."""
+    """Call CreateRecurringPaymentsProfile for each recurringlineitem.
+    NOTE: There's no way for an IPN url to be provided here.  All recurring
+          profiles will use the account defaults."""
+    # TODO: The above note about the IPN needs to be a BIG warning in the wiki
     # TODO: Trial Periods, Shipping (cost and address), Tax
     for item in cart.recurringlineitems.all():
         params = {"METHOD": "CreateRecurringPaymentsProfile",
@@ -54,11 +57,11 @@ def create_recurring_profile(token, payer_id, cart, settings):
                   "AMT": item.recurring_price,
                   "CURRENCYCODE": "USD", # TODO: Make setting
                   "PAYERID": payer_id,
-                  "NOTIFYURL": _ipn_url(settings)
                   }
         result = _send_command(params, settings)
         if result.get("PROFILESTATUS", "") == "ActiveProfile":
             item.is_active = True
+            item.payment_token = result["PROFILEID"]
             item.save()
     cart.update_state()
 

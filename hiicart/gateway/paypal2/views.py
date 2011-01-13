@@ -26,7 +26,6 @@ def ipn(request):
     There is currently not working documentation on Paypal's site
     for IPNs from the Adaptive Payments API.  This has been created using
     test messages from AP and knowledge from the web payments API."""
-    import pdb; pdb.set_trace()
     if request.method != "POST":
         return HttpResponse("Requests must be POSTed")
     data = request.POST
@@ -39,6 +38,12 @@ def ipn(request):
     if "txn_type" in data: # Inidividual Tranasction IPN
         if data["txn_type"] == "cart":
             ipn.accept_payment(data)
+        elif data["txn_type"] == "recurring_payment_profile_created":
+            ipn.recurring_payment_profile_created(data)
+        elif data["txn_type"] == "recurring_payment":
+            ipn.accept_recurring_payment(data)
+        elif data["txn_type"] == "recurring_payment_profile_cancel":
+            ipn.recurring_payment_profile_cancelled(data)
         else:
             log.info("Unknown txn_type: %s" % data["txn_type"])
     else: #dunno
