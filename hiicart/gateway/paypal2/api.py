@@ -1,4 +1,7 @@
-"""Functions to make calls to Paypal's NVP API."""
+"""Functions to make calls to Paypal's NVP API.
+
+API Reference: https://cms.paypal.com/us/cgi-bin/?cmd=_render-content&content_ID=developer/howto_api_reference
+"""
 # TODO: Make this an object that gets its own settings (using _SharedBase?)
 
 import httplib2
@@ -39,6 +42,11 @@ def _send_command(params, settings):
     data = unquote(data)
     # TODO: logging
     return dict([(l,r) for l,r in [p.split('=') for p in data.split('&')]])
+
+def cancel_recurring_profile(recurringlineitem):
+    """Call ManageRecurringPaymentsProfileStatus to cancel a profile."""
+    # TODO: Implement this call so we can cancel reucurring items.
+    # Reference: https://cms.paypal.com/us/cgi-bin/?cmd=_render-content&content_ID=developer/e_howto_api_nvp_r_ManageRecurringPaymentsProfileStatus
 
 def create_recurring_profile(token, payer_id, cart, settings):
     """Call CreateRecurringPaymentsProfile for each recurringlineitem.

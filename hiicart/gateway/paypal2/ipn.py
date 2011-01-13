@@ -18,7 +18,7 @@ from hiicart.gateway.paypal2.settings import SETTINGS as default_settings
 from hiicart.models import HiiCart, Payment
 
 class Paypal2IPN(IPNBase):
-    """Payment Gateway for Paypal Adaptive Payments."""
+    """Payment Gateway for Paypal Website Payments Pro."""
 
     def __init__(self):
         super(Paypal2IPN, self).__init__("paypal2", default_settings)
@@ -82,6 +82,7 @@ class Paypal2IPN(IPNBase):
 
         Using the raw data overcomes issues with unicode and urlencode.
         """
+        # TODO: This is common to all Paypal gateways. It should be shared.
         if self.settings["LIVE"]:
             submit_url = "https://www.paypal.com/cgi-bin/webscr"
         else:
@@ -95,6 +96,7 @@ class Paypal2IPN(IPNBase):
     def recurring_payment_profile_cancelled(self, data):
         """Notification that a recurring profile was cancelled."""
         # TODO: Support more than one profile in a cart
+        #       Can ri.payment_token be used to id the profile?
         cart = self._find_cart(data, "rp_invoice_id")
         ri = cart.recurringlineitems.all()[0]
         ri.is_active = True 
@@ -103,6 +105,7 @@ class Paypal2IPN(IPNBase):
     def recurring_payment_profile_created(self, data):
         """Notification that a recurring profile was created."""
         # TODO: Support more than one profile in a cart
+        #       Can ri.payment_token be used to id the profile?
         cart = self._find_cart(data, "rp_invoice_id")
         ri = cart.recurringlineitems.all()[0]
         ri.is_active = True 

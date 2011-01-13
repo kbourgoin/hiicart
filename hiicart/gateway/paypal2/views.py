@@ -17,6 +17,11 @@ log = logging.getLogger("hiicart.gateway.paypal_adaptive")
 def _find_cart(data):
     pass
 
+# TODO: Move all the functions from ipn.py here. There's no real reason
+#       for it to be in a separate file. It creates confusion when you
+#       have an api.py and ipn.py. The same should happen in the other
+#       gateways.
+
 @csrf_view_exempt
 @format_exceptions
 @never_cache
