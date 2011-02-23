@@ -35,7 +35,7 @@ class PaypalIPN(IPNBase):
         # invoice may have a suffix due to retries
         invoice = data["invoice"] if "invoice" in data else data["item_number"]
         if not invoice:
-            self.log.warn("No invoice # in data, aborting IPN")
+            self.log.error("No invoice # in data, aborting IPN")
             return None
         try:
             return HiiCart.objects.get(_cart_uuid=invoice[:36])
