@@ -70,7 +70,7 @@ class AmazonIPN(IPNBase):
             cart.update_state()
         elif data["transactionStatus"] == "FAILURE":
             self.log.warn("Purchase %i (txn:%s) failed with message '%s'" % (
-                cart.id, data['transactionId'], data.get('statusMessage', '(no statusMessage)')))
+                cart.id, data['transactionId'], str(data.items())))
             cart.update_state()
 
     def begin_recurring(self, cart):
