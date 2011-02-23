@@ -41,6 +41,7 @@ class GoogleIPN(IPNBase):
             if len(items) > 0:
                 private_data = data[items[0]]
         if not private_data:
+            self.log.error("Could not find private data. Data: %s" % str(data.items()))
             return None # Not a HiiCart purchase ?
         # Find Purchase from private data
         match = re.search(r'(hiicart|bursar)-purchase id="([0-9a-f-]+)"',  private_data)
