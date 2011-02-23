@@ -256,7 +256,8 @@ class HiiCart(models.Model):
         """
         gateway = self.get_gateway()
         gateway.charge_recurring(self, grace_period)
-
+        cart.update_state()
+        
     def clone(self):
         """Clone this cart in the OPEN state."""
         dupe = copy.copy(self)

@@ -114,7 +114,6 @@ class AmazonGateway(PaymentGatewayBase):
             # TokenUsageError is if we tried to charge too soon
             item.recurring = False
             item.save()
-        cart.update_state()
 
     def sanitize_clone(self, cart):
         """Nothing to do here..."""
