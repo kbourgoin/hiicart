@@ -40,6 +40,7 @@ class PaypalIPN(IPNBase):
         try:
             return HiiCart.objects.get(_cart_uuid=invoice[:36])
         except HiiCart.DoesNotExist:
+            self.log.error("Could not find hiicart with uuid %s" % invoice[:36])
             return None        
 
     def accept_payment(self, data):
