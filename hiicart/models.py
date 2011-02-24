@@ -174,7 +174,7 @@ class HiiCart(models.Model):
             return "(unsaved) %s" % self.state
 
     @staticmethod
-    def register_lineitem_type(recurring):
+    def register_lineitem_type(recurring=False):
         def register_decorator(cls):
             HiiCart.lineitem_types.append(cls)
             if recurring:
@@ -432,7 +432,7 @@ class LineItemBase(models.Model):
         super(LineItemBase, self).save(*args, **kwargs)
 
 
-@HiiCart.register_lineitem_type(recurring=False)
+@HiiCart.register_lineitem_type()
 class LineItem(LineItemBase):
     """A single line item in a purchase."""
     unit_price = DecimalField("Unit price", max_digits=18, decimal_places=10)
