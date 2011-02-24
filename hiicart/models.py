@@ -186,17 +186,17 @@ class HiiCart(models.Model):
 
     @property
     def lineitems(self):
-        return _get_lineitems(HiiCart.lineitem_types)
+        return self._get_lineitems(HiiCart.lineitem_types)
 
     @property
     def recurring_lineitems(self):
-        return _get_lineitems(HiiCart.recurring_lineitem_types)
+        return self._get_lineitems(HiiCart.recurring_lineitem_types)
 
     @property
     def one_time_lineitems(self):
-        return _get_lineitems(HiiCart.one_time_lineitem_types)
+        return self._get_lineitems(HiiCart.one_time_lineitem_types)
 
-    def _get_lineitems(cls_list):
+    def _get_lineitems(self, cls_list):
         lineitems = []
         for cls in cls_list:
             lineitems += list(cls.objects.filter(cart=self))
@@ -394,7 +394,7 @@ class LineItemBase(models.Model):
     """
     _sub_total = DecimalField("Sub total", max_digits=18, decimal_places=10)
     _total = DecimalField("Total", max_digits=18, decimal_places=2, default=Decimal("0.00"))
-    cart = models.ForeignKey(HiiCart, verbose_name="Cart", related_name="%(class)ss")
+    cart = models.ForeignKey(HiiCart, verbose_name="Cart")
     description = models.TextField("Description", blank=True)
     discount = DecimalField("Item discount", max_digits=18, decimal_places=10, default=Decimal("0.00"))
     name = models.CharField("Item", max_length=100)
