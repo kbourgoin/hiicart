@@ -432,10 +432,13 @@ class LineItemBase(models.Model):
         super(LineItemBase, self).save(*args, **kwargs)
 
 
-@HiiCart.register_lineitem_type()
-class LineItem(LineItemBase):
-    """A single line item in a purchase."""
+class OneTimeLineItemBase(LineItemBase):
+    """Base class for line items that do not recur, for external apps to inherit"""
+
     unit_price = DecimalField("Unit price", max_digits=18, decimal_places=10)
+
+    class Meta:
+        abstract = True
 
     @property
     def sub_total(self):
@@ -446,6 +449,12 @@ class LineItem(LineItemBase):
     def total(self):
         """Total, calculated as sub_total - discount."""
         return self.sub_total - self.discount
+
+
+@HiiCart.register_lineitem_type()
+class OneTimeLineItem(OneTimeLineItemBase):
+    """A single line item in a purchase."""
+    pass
 
 
 class Note(models.Model):
@@ -495,14 +504,9 @@ class Payment(models.Model):
             self._old_state = self.state
 
 
-@HiiCart.register_lineitem_type(recurring=True)
-class RecurringLineItem(LineItemBase):
-    """
-    Extra information needed for a recurring item, such as a subscription.
+class RecurringLineItemBase(LineItemBase):
+    """Base class for line items that recur, for external apps to inherit from"""
 
-    To make a trial, put the trial price, tax, etc. into the parent LineItem,
-    and mark this object trial=True, trial_length=xxx
-    """
     duration = models.PositiveIntegerField("Duration", help_text="Length of each billing cycle", null=True, blank=True)
     duration_unit = models.CharField("Duration Unit", max_length=5, choices=SUBSCRIPTION_UNITS, default="DAY", null=False)
     is_active = models.BooleanField("Is Currently Subscribed", default=False, db_index=True)
@@ -550,3 +554,14 @@ class RecurringLineItem(LineItemBase):
             return datetime.now() > self.get_expiration() + grace_period
         elif hiicart_settings["EXPIRATION_GRACE_PERIOD"]:
             return datetime.now() > self.get_expiration() + hiicart_settings["EXPIRATION_GRACE_PERIOD"]
+
+
+@HiiCart.register_lineitem_type(recurring=True)
+class RecurringLineItem(RecurringLineItemBase):
+    """
+    Extra information needed for a recurring item, such as a subscription.
+
+    To make a trial, put the trial price, tax, etc. into the parent LineItem,
+    and mark this object trial=True, trial_length=xxx
+    """
+    pass
