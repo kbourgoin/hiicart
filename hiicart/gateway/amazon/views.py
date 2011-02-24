@@ -7,7 +7,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
 from hiicart.gateway.amazon import fps
-from hiicart.gateway.amazon.ipn import AmazonIPN 
+from hiicart.gateway.amazon.ipn import AmazonIPN
 from hiicart.gateway.countries import COUNTRIES
 from hiicart.models import HiiCart
 from hiicart.utils import format_exceptions
@@ -60,11 +60,11 @@ def cbui(request, settings=None):
     if not cart.bill_country and country in COUNTRIES.values():
         cart.bill_country = [k for k,v in COUNTRIES.iteritems() if v == country][0]
     cart.save()
-    recurring = cart.recurringlineitems.all()
+    recurring = cart.recurring_lineitems
     if len(recurring) > 0:
         handler.save_recurring_token(cart, request.GET["tokenID"])
         if recurring[0].recurring_start is None:
-            result = handler.make_pay_request(cart, request.GET["tokenID"]) 
+            result = handler.make_pay_request(cart, request.GET["tokenID"])
             if result == "Success":
                 handler.begin_recurring(cart)
         else:

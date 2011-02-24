@@ -27,7 +27,7 @@ def _find_cart(data):
 @never_cache
 def ipn(request):
     """Instant Payment Notification ipn.
-    
+
     There is currently not working documentation on Paypal's site
     for IPNs from the Adaptive Payments API.  This has been created using
     test messages from AP and knowledge from the web payments API."""
@@ -78,10 +78,10 @@ def do_pay(request):
             raise GatewayError("Incorrect values POSTed to do_buy")
     cart = HiiCart.objects.get(_cart_uuid=request.POST["cart"])
     ipn = Paypal2IPN()
-    if cart.lineitems.count() > 0:
+    if len(cart.one_time_lineitems) > 0:
         api.do_express_payment(request.POST["token"], request.POST["PayerID"],
                                cart, ipn.settings)
-    if cart.recurringlineitems.count() > 0:
+    if len(cart.recurring_lineitems) > 0:
         api.create_recurring_profile(request.POST["token"],
                                      request.POST["PayerID"],
                                      cart, ipn.settings)

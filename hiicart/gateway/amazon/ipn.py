@@ -57,7 +57,7 @@ class AmazonIPN(IPNBase):
             cart.update_state()
             self.begin_recurring(cart)
         elif data["transactionStatus"] == "CANCELLED":
-            message = "Purchase %i (txn:%s) was cancelled with message '%s'" % ( 
+            message = "Purchase %i (txn:%s) was cancelled with message '%s'" % (
                       cart.id, data['transactionId'], data['statusMessage'])
             self.log.warn(message)
             transaction_id = data["transactionId"]
@@ -75,9 +75,9 @@ class AmazonIPN(IPNBase):
     def begin_recurring(self, cart):
         """Save token and mark recurring item as active."""
         self._update_with_cart_settings(cart)
-        if cart.recurringlineitems.count() == 0:
+        if len(cart.recurring_lineitems) == 0:
             return
-        for ri in cart.recurringlineitems.all():
+        for ri in cart.recurring_lineitems:
             ri.is_active = True
             ri.save()
         cart.update_state()
@@ -85,24 +85,24 @@ class AmazonIPN(IPNBase):
     def end_recurring(self, cart, token):
         """Mark a recurring item as inactive."""
         self._update_with_cart_settings(cart)
-        if cart.recurringlineitems.count() == 0:
+        if len(cart.recurring_lineitems) == 0:
             return
-        for ri in cart.recurringlineitems.all():
-            ri.is_active = False 
+        for ri in cart.recurring_lineitems:
+            ri.is_active = False
             ri.save()
         cart.update_state()
 
     def make_pay_request(self, cart, token, caller_reference=None):
         """
-        Make a Pay request for the purchase with the given token. 
+        Make a Pay request for the purchase with the given token.
         Return status received from Amazon.
         """
         self._update_with_cart_settings(cart)
         if caller_reference is None:
             caller_reference = cart.cart_uuid
-        response = fps.do_fps("Pay", "GET", self.settings, 
+        response = fps.do_fps("Pay", "GET", self.settings,
                    **{"CallerReference" : caller_reference,
-                      "SenderTokenId" : token, 
+                      "SenderTokenId" : token,
                       "TransactionAmount.CurrencyCode" : "USD",
                       "TransactionAmount.Value" : cart.total})
         xml = ET.XML(response)
@@ -111,7 +111,7 @@ class AmazonIPN(IPNBase):
             error = self._process_error(response)
             if not error:
                 msg = "Pay request failed for purchase '%s' with response: %s" % (
-                            cart, response) 
+                            cart, response)
             else:
                 msg = "Pay request failed for purchase '%s' with code/message: '%s' '%s' (request id: '%s')" % (
                             cart, error[0], error[1], error[2])
@@ -147,9 +147,9 @@ class AmazonIPN(IPNBase):
     def save_recurring_token(self, cart, token):
         """Save recurring use token for future use."""
         self._update_with_cart_settings(cart)
-        if cart.recurringlineitems.count() == 0:
+        if len(cart.recurring_lineitems) == 0:
             return
-        ri = cart.recurringlineitems.all()[0]
+        ri = cart.recurring_lineitems[0]
         ri.payment_token = token
         ri.save()
 

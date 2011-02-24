@@ -43,18 +43,18 @@ def _send_command(params, settings):
     # TODO: logging
     return dict([(l,r) for l,r in [p.split('=') for p in data.split('&')]])
 
-def cancel_recurring_profile(recurringlineitem):
+def cancel_recurring_profile(recurring_lineitem):
     """Call ManageRecurringPaymentsProfileStatus to cancel a profile."""
     # TODO: Implement this call so we can cancel reucurring items.
     # Reference: https://cms.paypal.com/us/cgi-bin/?cmd=_render-content&content_ID=developer/e_howto_api_nvp_r_ManageRecurringPaymentsProfileStatus
 
 def create_recurring_profile(token, payer_id, cart, settings):
-    """Call CreateRecurringPaymentsProfile for each recurringlineitem.
+    """Call CreateRecurringPaymentsProfile for each recurring_lineitem.
     NOTE: There's no way for an IPN url to be provided here.  All recurring
           profiles will use the account defaults."""
     # TODO: The above note about the IPN needs to be a BIG warning in the wiki
     # TODO: Trial Periods, Shipping (cost and address), Tax
-    for item in cart.recurringlineitems.all():
+    for item in cart.recurring_lineitems:
         params = {"METHOD": "CreateRecurringPaymentsProfile",
                   "TOKEN": token,
                   "PROFILESTARTDATE": item.recurring_start or datetime.now(),
@@ -87,7 +87,7 @@ def do_express_payment(token, payer_id, cart, settings):
               "PAYMENTREQUEST_0_SELLERPAYPALACCOUNTID": settings["SELLER_EMAIL"],
               }
     params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
-    for i, item in enumerate(cart.lineitems.all()):
+    for i, item in enumerate(cart.one_time_lineitems):
         params["L_PAYMENTREQUEST_0_NAME%i"%i] = item.name
         params["L_PAYMENTREQUEST_0_DESC%i"%i] = item.description
         params["L_PAYMENTREQUEST_0_AMT%i"%i] = item.total.quantize(Decimal(".01"))
@@ -107,7 +107,7 @@ def get_express_details(token, settings):
     params = {"METHOD": "GetExpressCheckoutDetails",
               "TOKEN": token}
     # TODO: This should update cart info like other gateways
-    return _send_command(params, settings) 
+    return _send_command(params, settings)
 
 def set_express_checkout(cart, settings, collect_address=False):
     from hiicart.gateway.paypal2.views import authorized
@@ -123,16 +123,16 @@ def set_express_checkout(cart, settings, collect_address=False):
               "PAYMENTREQUEST_0_PAYMENTACTION": "Sale",
               "PAYMENTREQUEST_0_SELLERPAYPALACCOUNTID": settings["SELLER_EMAIL"],
             }
-    if cart.lineitems.count() > 0:
+    if len(cart.one_time_lineitems) > 0:
         params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
-        for i, item in enumerate(cart.lineitems.all()):
+        for i, item in enumerate(cart.one_time_lineitems):
             params["L_PAYMENTREQUEST_0_NAME%i"%i] = item.name
             params["L_PAYMENTREQUEST_0_DESC%i"%i] = item.description
             params["L_PAYMENTREQUEST_0_AMT%i"%i] = item.total.quantize(Decimal(".01"))
             params["L_PAYMENTREQUEST_0_NUMBER%i"] = item.sku
     else:
         params["PAYMENTREQUEST_0_AMT"] = cart.total.quantize(Decimal(".01"))
-        for i, item in enumerate(cart.recurringlineitems.all()):
+        for i, item in enumerate(cart.recurring_lineitems):
             params["L_BILLINGTYPE%i"%i] = "RecurringPayments"
             params["L_BILLINGAGREEMENTDESCRIPTION%i"%i] = item.description
             #params["L_AMT%i"%i] = item.recurring_price.quantize(Decimal(".01"))

@@ -63,7 +63,7 @@ class PaypalGateway(PaymentGatewayBase):
 
     def _encrypt_data(self, data):
         """
-        Encrypt the form data.  
+        Encrypt the form data.
 
         Refer to http://sandbox.rulemaker.net/ngps/m2/howto.smime.html
         """
@@ -74,7 +74,7 @@ class PaypalGateway(PaymentGatewayBase):
         raw = ["cert_id=%s" % certid]
         raw.extend([u"%s=%s" % (key, val) for key, val in data.items() if val])
         raw = "\n".join(raw)
-        raw = raw.encode("utf-8")        
+        raw = raw.encode("utf-8")
         # make an smime object
         s = SMIME.SMIME()
         # load our public and private keys
@@ -100,11 +100,11 @@ class PaypalGateway(PaymentGatewayBase):
         # write into a new buffer
         p7.write(out)
         return out.read()
-        
+
     def _get_form_data(self, cart):
         """Creates a list of key,val to be sumbitted to PayPal."""
         account = self.settings["BUSINESS"]
-        submit = SortedDict()        
+        submit = SortedDict()
         submit["business"] = account
         submit["currency_code"] = self.settings["CURRENCY_CODE"]
         submit["notify_url"] = self.settings["IPN_URL"]
@@ -119,11 +119,11 @@ class PaypalGateway(PaymentGatewayBase):
         # Locale
         submit["lc"] = self.settings["LOCALE"]
         submit["invoice"] = cart.cart_uuid
-        if cart.recurringlineitems.count() > 1:
+        if len(cart.recurring_lineitems) > 1:
             self.log.error("Cannot have more than one subscription in one order for paypal.  Only processing the first one for %s", cart)
             return
-        if cart.recurringlineitems.count() > 0:
-            item = cart.recurringlineitems.all()[0]
+        if len(cart.recurring_lineitems) > 0:
+            item = cart.recurring_lineitems[0]
             submit["src"] = "1"
             submit["cmd"] = PAYMENT_CMD["SUBSCRIPTION"]
             submit["item_name"] = item.name
@@ -141,7 +141,7 @@ class PaypalGateway(PaymentGatewayBase):
                 submit["a1"] = "0"
                 submit["p1"] = delay.days
                 submit["t1"] = "D"
-            elif item.trial:   
+            elif item.trial:
                 # initial trial
                 submit["a1"] = item.trial_price
                 submit["p1"] = item.trial_length
@@ -167,7 +167,7 @@ class PaypalGateway(PaymentGatewayBase):
             submit["cmd"] = PAYMENT_CMD["CART"]
             submit["upload"] = "1"
             ix = 1
-            for item in cart.lineitems.all():
+            for item in cart.one_time_lineitems:
                 submit["item_name_%i" % ix] = item.name
                 submit["amount_%i" % ix] = item.unit_price.quantize(Decimal(".01"))
                 submit["quantity_%i" % ix] = item.quantity
@@ -196,7 +196,7 @@ class PaypalGateway(PaymentGatewayBase):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         self._update_with_cart_settings(cart)
         alias = self.settings["BUSINESS"]
-        url = "%s?cmd=%s&alias=%s" % (self.submit_url, 
+        url = "%s?cmd=%s&alias=%s" % (self.submit_url,
                                       PAYMENT_CMD["UNSUBSCRIBE"],
                                       self.settings["BUSINESS"])
         return CancelResult("url", url=url)

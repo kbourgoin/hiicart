@@ -39,7 +39,7 @@ class PaypalIPN(IPNBase):
         try:
             return HiiCart.objects.get(_cart_uuid=invoice[:36])
         except HiiCart.DoesNotExist:
-            return None        
+            return None
 
     def accept_payment(self, data):
         """Accept a successful Paypal payment"""
@@ -78,7 +78,11 @@ class PaypalIPN(IPNBase):
             self.log.warn("Unable to find purchase for IPN.")
             return
         sku = data.get("item_number", None)
-        item = cart.recurringlineitems.get(sku=sku) if sku else None 
+        if sku:
+            recurring_by_sku = dict([(li.sku, li) for li in cart.recurring_lineitems])
+            item = recurring_by_sku.get(sku)
+        else:
+            item = None
         if item:
             item.is_active = True
             item.save()
@@ -91,9 +95,10 @@ class PaypalIPN(IPNBase):
             self.log.warn("Unable to find purchase for IPN.")
             return
         sku = data.get("item_number", None)
-        item = cart.recurringlineitems.get(sku=sku) if sku else None 
+        recurring_by_sku = dict([(li.sku, li) for li in cart.recurring_lineitems])
+        item = recurring_by_sku.get(sku)
         if item:
-            item.is_active = False 
+            item.is_active = False
             item.save()
             cart.update_state()
 

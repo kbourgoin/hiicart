@@ -39,7 +39,7 @@ class AmazonGateway(PaymentGatewayBase):
         else:
             url = mark_safe(TEST_CBUI_URL)
         return url
-    
+
     def _get_cbui_values(self, cart, collect_address=False):
         """Get the key/values to be used in a co-branded UI request."""
         values = {"callerKey" : self.settings["AWS_KEY"],
@@ -50,12 +50,12 @@ class AmazonGateway(PaymentGatewayBase):
                   "returnURL" : self.settings["CBUI_RETURN_URL"],
                   "transactionAmount" : cart.total,
                   "collectShippingAddress": str(collect_address)}
-        if cart.recurringlineitems.count() == 0:
+        if len(cart.recurring_lineitems) == 0:
             values["pipelineName"] = "SingleUse"
         else:
-            if cart.recurringlineitems.count() > 1:
+            if len(cart.recurring_lineitems) > 1:
                 raise GatewayError("Only one recurring lineitem per cart.")
-            recurring = cart.recurringlineitems.all()[0]
+            recurring = cart.recurring_lineitems[0]
             values["pipelineName"] = "Recurring"
             values["recurringPeriod"] = "%s %s" % (
                     recurring.duration, recurring.duration_unit)
@@ -67,7 +67,7 @@ class AmazonGateway(PaymentGatewayBase):
         methods = self._get_payment_methods()
         if methods:
             values["paymentMethod"] = methods
-        return values 
+        return values
 
     def _get_payment_methods(self):
         methods = []
@@ -86,10 +86,10 @@ class AmazonGateway(PaymentGatewayBase):
 
     def cancel_recurring(self, cart):
         """Cancel recurring lineitem."""
-        if cart.recurringlineitems.count() == 0:
+        if len(cart.recurring_lineitems) == 0:
             return
         self._update_with_cart_settings(cart)
-        item = cart.recurringlineitems.all()[0]
+        item = cart.recurring_lineitems[0]
         token = item.payment_token
         response = fps.do_fps("CancelToken", "GET", self.settings, TokenId=token)
         item.is_active = False
@@ -105,7 +105,7 @@ class AmazonGateway(PaymentGatewayBase):
         self._update_with_cart_settings(cart)
         if not grace_period:
             grace_period = self.settings.get("CHARGE_RECURRING_GRACE_PERIOD", None)
-        recurring = cart.recurringlineitems.filter(is_active=True)
+        recurring = [li for li in cart.recurring_lineitems if li.is_active]
         if not recurring or not recurring[0].is_expired(grace_period=grace_period):
             return
         item = recurring[0]

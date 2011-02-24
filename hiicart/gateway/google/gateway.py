@@ -21,7 +21,7 @@ class GoogleGateway(PaymentGatewayBase):
         if self.settings["LIVE"]:
             base = "https://checkout.google.com/api/checkout/v2/merchantCheckout/Merchant/%s"
         else:
-            base = "https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s" 
+            base = "https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s"
         return base % self.settings["MERCHANT_ID"]
 
     @property
@@ -51,10 +51,10 @@ class GoogleGateway(PaymentGatewayBase):
         # Cancellation is a problem beacuse it requires refund. Need to find a way around this.
         # May have to redirect users to subscription page like Paypal does.
         raise NotImplementedError
-        #if cart.payments.count() == 0 or cart.recurringlineitems.count() == 0:
+        #if cart.payments.count() == 0 or len(cart.recurring_lineitems) == 0:
         #    return
         #payment = cart.payments.all()[0]
-        #item = cart.recurringlineitems.all()[0]
+        #item = cart.recurring_lineitems[0]
         #params = {"_type" : "cancel-items",
         #          "google-order-number": payment.transaction_id,
         #          "reason" : "",
@@ -98,7 +98,7 @@ class GoogleGateway(PaymentGatewayBase):
         headers = {"Content-type" : "application/x-www-form-urlencoded",
                    "Authorization" : "Basic %s" % self.get_basic_auth()}
         http = httplib2.Http()
-        response, content = http.request(self._cart_url, "POST", cart_xml, 
+        response, content = http.request(self._cart_url, "POST", cart_xml,
                                          headers=headers)
         xml = ET.XML(content)
         url = xml.find("{http://checkout.google.com/schema/2}redirect-url").text

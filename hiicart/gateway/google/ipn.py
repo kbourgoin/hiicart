@@ -33,7 +33,7 @@ class GoogleIPN(IPNBase):
         as a new order. Need to find order id somewhere
         """
         private_data = None
-        if "shopping-cart.merchant-private-data" in data:        
+        if "shopping-cart.merchant-private-data" in data:
             private_data = data["shopping-cart.merchant-private-data"]
         else:
             items = [x for x in data.keys() if x.endswith("merchant-private-item-data")]
@@ -72,7 +72,7 @@ class GoogleIPN(IPNBase):
         """
         Handle an authorization-amount-notification
 
-        These requests are sent in response to explicit credit card 
+        These requests are sent in response to explicit credit card
         reauthorizations.
         """
         pass
@@ -87,10 +87,11 @@ class GoogleIPN(IPNBase):
             item_ids = data["item-ids"]
         else:
             item_ids = [data["item-ids"]]
+        recurring_by_sku = dict([(li.sku, li) for li in cart.recurring_lineitems])
         for item_id in item_ids:
-            sku_key = "%s.merchant-item-id" % item_id         
+            sku_key = "%s.merchant-item-id" % item_id
             if sku_key in data:
-                item = cart.recurringlineitems.get(sku=data[sku_key])
+                item = recurring_by_sku.get(data['sku_key'])
                 items.append(item)
         for i in items:
             i.is_active = False
@@ -105,7 +106,7 @@ class GoogleIPN(IPNBase):
         pmnt = self._record_payment(data, amount=amount)
         if not pmnt:
             return
-        for r in pmnt.cart.recurringlineitems.all():
+        for r in pmnt.cart.recurring_lineitems:
             r.is_active = True
             r.save()
         pmnt.cart.update_state()
@@ -115,13 +116,13 @@ class GoogleIPN(IPNBase):
         Handle a chargeback-amount-notification
 
         Handled exactly the same as a refund
-        """    
+        """
         return self.refund_amount(data)
 
     def new_order(self, data):
         """
         Handle new-order-notification
-        
+
         Looks up the Purchase and creates a pending payment.
         """
         # TODO: Order adjustments from shipping/tax
@@ -152,8 +153,8 @@ class GoogleIPN(IPNBase):
         cart.bill_postal_code = cart.bill_postal_code or data["buyer-billing-address.postal-code"]
         cart.bill_country = cart.bill_country or data["buyer-billing-address.country-code"]
         cart.save()
-        
-    def order_state_change(self, data):        
+
+    def order_state_change(self, data):
         """Handle an order-state-change notification"""
         old = data["previous-financial-order-state"]
         new = data["new-financial-order-state"]
@@ -163,7 +164,7 @@ class GoogleIPN(IPNBase):
         cart = payment.cart
         if old != "CANCELLED" and new == "CANCELLED":
             cart.notes.create(text="Purchase cancelled via IPN: %s" % datetime.now())
-            for r in cart.recurringlineitems.all(): 
+            for r in cart.recurring_lineitems:
                 r.is_active = False
                 r.save()
             cart.set_state("CANCELLED")
@@ -174,11 +175,11 @@ class GoogleIPN(IPNBase):
 
         Handled as a charge amount for a negative amount with
         the reason_code set to "REFUND"
-        """  
+        """
         amount = Decimal(data["latest-refund-amount"]) * -1
         pmnt = self._record_payment(data, amount=amount)
         if pmnt:
-           pmnt.cart.update_state() 
+           pmnt.cart.update_state()
 
     def risk_information(self, data):
         """
@@ -190,7 +191,7 @@ class GoogleIPN(IPNBase):
         payment = self._find_payment(data)
         if not payment:
             return
-        keys = [k for k in data.keys() if k[:17] == "risk-information."] 
+        keys = [k for k in data.keys() if k[:17] == "risk-information."]
         keys.sort()
         message = "Risk Information: \n" + "\n".join(["%s: %s" % (k, data[k]) for k in keys])
         payment.notes.create(text=message)

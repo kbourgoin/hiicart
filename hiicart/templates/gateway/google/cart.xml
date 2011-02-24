@@ -6,10 +6,10 @@
       <hiicart-purchase id="{{ cart.cart_uuid }}" />
     </merchant-private-data>
     <items>
-      {% for lineitem in cart.lineitems.all %}
+      {% for lineitem in cart.one_time_lineitems %}
        <item>
           <item-name>{{ lineitem.name }}</item-name>
-          <item-description>{{ lineitem.description }}</item-description>	
+          <item-description>{{ lineitem.description }}</item-description>
           <quantity>{{ lineitem.quantity }}</quantity>
 	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
   	      <unit-price currency="{{ currency }}">{{ lineitem.unit_price|floatformat:2 }}</unit-price>
@@ -18,10 +18,10 @@
 	        </digital-content>
         </item>
       {% endfor %}
-      {% for lineitem in cart.recurringlineitems.all %}
+      {% for lineitem in cart.recurring_lineitems %}
        <item>
           <item-name>{{ lineitem.name }}</item-name>
-          <item-description>{{ lineitem.description }}</item-description>	
+          <item-description>{{ lineitem.description }}</item-description>
           <quantity>{{ lineitem.quantity }}</quantity>
 	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
 	        <digital-content>
@@ -32,7 +32,7 @@
           {% else %}
           <unit-price currency="{{ currency }}">{{ lineitem.recurring_price|floatformat:2 }}</unit-price>
           {% endif %}
-          <subscription type="google" 
+          <subscription type="google"
                         period="{% google_recur_period lineitem %}"
                         {% if  lineitem.recurring_start %}start-date="{{lineitem.recurring_start|date:"c"}}" {% endif %}>
 	          <payments>

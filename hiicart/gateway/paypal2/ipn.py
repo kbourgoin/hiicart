@@ -32,7 +32,7 @@ class Paypal2IPN(IPNBase):
         try:
             return HiiCart.objects.get(_cart_uuid=invoice[:36])
         except HiiCart.DoesNotExist:
-            return None        
+            return None
 
     def accept_payment(self, data):
         """Accept a PayPal payment IPN."""
@@ -98,8 +98,8 @@ class Paypal2IPN(IPNBase):
         # TODO: Support more than one profile in a cart
         #       Can ri.payment_token be used to id the profile?
         cart = self._find_cart(data, "rp_invoice_id")
-        ri = cart.recurringlineitems.all()[0]
-        ri.is_active = True 
+        ri = cart.recurring_lineitems[0]
+        ri.is_active = True
         ri.save()
 
     def recurring_payment_profile_created(self, data):
@@ -107,7 +107,7 @@ class Paypal2IPN(IPNBase):
         # TODO: Support more than one profile in a cart
         #       Can ri.payment_token be used to id the profile?
         cart = self._find_cart(data, "rp_invoice_id")
-        ri = cart.recurringlineitems.all()[0]
-        ri.is_active = True 
+        ri = cart.recurring_lineitems[0]
+        ri.is_active = True
         ri.save()
 

@@ -112,7 +112,7 @@ def _get_gateway(name):
 if django.VERSION[1] >= 3 and hiicart_settings["KEEP_ON_USER_DELETE"]:
     _user_delete_behavior = models.SET_NULL
 else:
-    _user_delete_behavior = None 
+    _user_delete_behavior = None
 
 class HiiCart(models.Model):
     """
@@ -121,8 +121,12 @@ class HiiCart(models.Model):
     Facilitates the cart being submitted to a payment gateway and some
     subscription management functions.
     """
+    lineitem_types = []
+    recurring_lineitem_types = []
+    one_time_lineitem_types = []
+
     _cart_state = models.CharField(choices=HIICART_STATES, max_length=16, default="OPEN", db_index=True)
-    _cart_uuid = models.CharField(max_length=36,db_index=True) 
+    _cart_uuid = models.CharField(max_length=36,db_index=True)
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
     if _user_delete_behavior is not None:
@@ -169,6 +173,35 @@ class HiiCart(models.Model):
         else:
             return "(unsaved) %s" % self.state
 
+    @staticmethod
+    def register_lineitem_type(recurring):
+        def register_decorator(cls):
+            HiiCart.lineitem_types.append(cls)
+            if recurring:
+                HiiCart.recurring_lineitem_types.append(cls)
+            else:
+                HiiCart.one_time_lineitem_types.append(cls)
+            return cls
+        return register_decorator
+
+    @property
+    def lineitems(self):
+        return _get_lineitems(HiiCart.lineitem_types)
+
+    @property
+    def recurring_lineitems(self):
+        return _get_lineitems(HiiCart.recurring_lineitem_types)
+
+    @property
+    def one_time_lineitems(self):
+        return _get_lineitems(HiiCart.one_time_lineitem_types)
+
+    def _get_lineitems(cls_list):
+        lineitems = []
+        for cls in cls_list:
+            lineitems += list(cls.objects.filter(cart=self))
+        return lineitems
+
     def _is_valid_transition(self, old, new):
         """
         Validate a proposed state transition.
@@ -183,7 +216,7 @@ class HiiCart(models.Model):
 
     def _recalc(self):
         """Recalculate totals"""
-        self._sub_total = self.sub_total 
+        self._sub_total = self.sub_total
         self._total = self.total
 
     @property
@@ -193,15 +226,13 @@ class HiiCart(models.Model):
 
     @property
     def state(self):
-        """Rtate of the cart. Read-only. Use update_state or set_state to change."""
+        """State of the cart. Read-only. Use update_state or set_state to change."""
         return self._cart_state
 
     @property
     def sub_total(self):
         """Current sub_total, calculated from lineitems."""
-        lineitems = sum([li.sub_total or 0 for li in self.lineitems.all()])
-        recurring = sum([ri.sub_total or 0 for ri in self.recurringlineitems.all()])
-        return lineitems + recurring
+        return sum([li.sub_total or 0 for li in self.lineitems])
 
     @property
     def total(self):
@@ -211,7 +242,7 @@ class HiiCart(models.Model):
     def adjust_expiration(self, newdate):
         """
         DEVELOPMENT ONLY: Adjust subscription end date.
-    
+
         * Dev only because it doesn't actually change when Google or PP
           will bill the subscription next.
         """
@@ -232,14 +263,14 @@ class HiiCart(models.Model):
         """Mark this cart as cancelled if recurring lineitems have expired."""
         if self.state != "PENDCANCEL" and self.state != "RECURRING":
             return
-        if all([r.is_expired(grace_period) for r in self.recurringlineitems.all()]):
+        if all([r.is_expired(grace_period) for r in self.recurring_lineitems]):
             self.set_state("CANCELLED")
 
     def cancel_recurring(self, skip_pendcancel=False):
         """
-        Cancel any recurring items in the cart. 
+        Cancel any recurring items in the cart.
 
-        skip_pendcancel skips the pending cancellation state and marks 
+        skip_pendcancel skips the pending cancellation state and marks
         the cart as cancelled.
         """
         gateway = self.get_gateway()
@@ -252,7 +283,7 @@ class HiiCart(models.Model):
     def charge_recurring(self, grace_period=None):
         """
         Charge recurring purchases if necessary.
-        
+
         Charges recurring items with the gateway, if possible. An optional
         grace period can be provided to avoid premature charging. This is
         provided since the gateway might be in another timezone, causing
@@ -261,7 +292,7 @@ class HiiCart(models.Model):
         gateway = self.get_gateway()
         gateway.charge_recurring(self, grace_period)
         self.update_state()
-        
+
     def clone(self):
         """Clone this cart in the OPEN state."""
         dupe = copy.copy(self)
@@ -276,15 +307,13 @@ class HiiCart(models.Model):
             gateway.sanitize_clone(dupe)
         # Need to save before we can attach lineitems
         dupe.save()
-        for item in self.lineitems.all():
-            item.clone(dupe)
-        for item in self.recurringlineitems.all():
+        for item in self.lineitems:
             item.clone(dupe)
         return dupe
 
     def get_expiration(self):
         """Get expiration of recurring item or None if there are no recurring items."""
-        return max([r.get_expiration() for r in self.recurringlineitems.all()])
+        return max([r.get_expiration() for r in self.recurring_lineitems])
 
     def get_gateway(self):
         """Get the PaymentGateway associated with this cart or None if cart has not been submitted yet.."""
@@ -300,8 +329,8 @@ class HiiCart(models.Model):
         super(HiiCart, self).save(*args, **kwargs)
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
-            cart_state_changed.send(sender="hiicart", cart=self, 
-                                    old_state=self._old_state, 
+            cart_state_changed.send(sender="hiicart", cart=self,
+                                    old_state=self._old_state,
                                     new_state=self.state)
             self._old_state = self.state
 
@@ -325,7 +354,7 @@ class HiiCart(models.Model):
     def update_state(self):
         """
         Update cart state based on payments and lineitem expirations.
-        
+
         Valid state transitions are listed in VALID_TRANSITIONS. This
         function contains the logic for when those various states are used.
         """
@@ -334,11 +363,11 @@ class HiiCart(models.Model):
         # Subscriptions involve multiple payments, therefore diff may be < 0
         if self.total - total_paid <= 0:
             newstate = "PAID"
-        if self.recurringlineitems.filter(is_active=True).count() > 0:
+        if any([li.is_active for li in self.recurring_lineitems]):
             newstate = "RECURRING"
-        elif self.recurringlineitems.count() > 0:
+        elif len(self.recurring_lineitems) > 0:
             # Paid and then cancelled, but not expired
-            if newstate == "PAID" and not all([r.is_expired() for r in self.recurringlineitems.all()]):
+            if newstate == "PAID" and not all([r.is_expired() for r in self.recurring_lineitems]):
                 newstate = "PENDCANCEL"
             # Could be cancelled manually (is_active set to False)
             # Could be a re-subscription, but is now cancelled. Is not paid.
@@ -353,8 +382,8 @@ class HiiCart(models.Model):
 
 class LineItemBase(models.Model):
     """
-    Abstract Base Cass for a  single line item in a purchase.
-    
+    Abstract Base Class for a single line item in a purchase.
+
     An abstract base class is used here because of limitations in how
     inheritance in django works. If LineItem was created with a ForeignKey to
     cart and RecurringLineItem was subclassed, then cart.lineitems.all()
@@ -374,19 +403,19 @@ class LineItemBase(models.Model):
     quantity = models.PositiveIntegerField("Quantity")
     sku = models.CharField("SKU", max_length=255, default="1", db_index=True)
     thankyou = models.CharField("Thank you message.", max_length=255)
-    
+
     class Meta:
         abstract = True
         ordering = ("ordering",)
 
     def __unicode__(self):
-        return "%s - %d" % (self.name, self.total) 
+        return "%s - %d" % (self.name, self.total)
 
     def _recalc(self):
         """Recalculate totals"""
-        self._sub_total = self.sub_total 
+        self._sub_total = self.sub_total
         self._total = self.total
-                
+
     def clone(self, newcart):
         """Clone this cart in the OPEN state."""
         dupe = copy.copy(self)
@@ -403,6 +432,7 @@ class LineItemBase(models.Model):
         super(LineItemBase, self).save(*args, **kwargs)
 
 
+@HiiCart.register_lineitem_type(recurring=False)
 class LineItem(LineItemBase):
     """A single line item in a purchase."""
     unit_price = DecimalField("Unit price", max_digits=18, decimal_places=10)
@@ -450,7 +480,7 @@ class Payment(models.Model):
 
     def __unicode__(self):
         if self.id is not None:
-            return u"#%i $%s %s %s" % (self.id, self.amount, 
+            return u"#%i $%s %s %s" % (self.id, self.amount,
                                        self.state, self.created)
         else:
             return u"(unsaved) $%s %s" % (self.amount, self.state)
@@ -459,17 +489,18 @@ class Payment(models.Model):
         super(Payment, self).save(*args, **kwargs)
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
-            payment_state_changed.send(sender="hiicart", payment=self, 
-                                       old_state=self._old_state, 
+            payment_state_changed.send(sender="hiicart", payment=self,
+                                       old_state=self._old_state,
                                        new_state=self.state)
             self._old_state = self.state
 
 
+@HiiCart.register_lineitem_type(recurring=True)
 class RecurringLineItem(LineItemBase):
     """
     Extra information needed for a recurring item, such as a subscription.
-    
-    To make a trial, put the trial price, tax, etc. into the parent LineItem, 
+
+    To make a trial, put the trial price, tax, etc. into the parent LineItem,
     and mark this object trial=True, trial_length=xxx
     """
     duration = models.PositiveIntegerField("Duration", help_text="Length of each billing cycle", null=True, blank=True)
@@ -504,11 +535,11 @@ class RecurringLineItem(LineItemBase):
             delta = relativedelta(months=self.duration)
         payments = self.cart.payments.filter(
                 state="PAID", amount__gt=0).order_by("-created")
-        if not payments: 
+        if not payments:
             if self.recurring_start:
                 last_payment = self.recurring_start - delta
             else:
-                return datetime.min 
+                return datetime.min
         else:
             last_payment = payments[0].created
         return last_payment + delta
