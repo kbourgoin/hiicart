@@ -197,10 +197,8 @@ class HiiCart(models.Model):
         return self._get_lineitems(HiiCart.one_time_lineitem_types)
 
     def _get_lineitems(self, cls_list):
-        lineitems = []
-        for cls in cls_list:
-            lineitems += list(cls.objects.filter(cart=self))
-        return lineitems
+        l = [cls.objects.filter(cart=self) for cls in cls_list]
+        return [item for sublist in l for item in sublist]
 
     def _is_valid_transition(self, old, new):
         """
@@ -452,7 +450,7 @@ class OneTimeLineItemBase(LineItemBase):
 
 
 @HiiCart.register_lineitem_type()
-class OneTimeLineItem(OneTimeLineItemBase):
+class LineItem(OneTimeLineItemBase):
     """A single line item in a purchase."""
     pass
 
@@ -519,6 +517,9 @@ class RecurringLineItemBase(LineItemBase):
     trial_price = DecimalField("Trial Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
     trial_length = models.PositiveIntegerField("Trial length", default=0)
     trial_times = models.PositiveIntegerField("Trial Times", help_text="Number of trial cycles", default=1)
+
+    class Meta:
+        abstract = True
 
     @property
     def sub_total(self):
