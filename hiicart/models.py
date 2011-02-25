@@ -347,7 +347,7 @@ class HiiCart(models.Model):
         gateway = self._get_gateway(gateway_name)
         self.gateway = gateway_name
         self.set_state("SUBMITTED")
-        return gateway.submit(self, collect_address)
+        return gateway.submit(collect_address)
 
     def update_state(self):
         """

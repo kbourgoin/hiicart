@@ -113,7 +113,7 @@ class PaymentGatewayBase(_SharedBase):
         """Remove any gateway-specific changes to a cloned cart."""
         raise NotImplementedError
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False):
         """Submit a cart to the gateway. Returns a SubmitResult."""
         raise NotImplementedError
 
