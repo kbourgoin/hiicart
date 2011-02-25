@@ -10,11 +10,11 @@ class GatewayError(Exception):
 
 class _SharedBase(object):
     """Shared base class between IPNs and Gateways
-    
+
     Created because they have significant overlapping functionality.
     """
 
-    def __init__(self, name, default_settings={}):
+    def __init__(self, name, default_settings=None):
         """Initalize logger and settings.
 
         Duplicate settings are overwritten according to priority according to
@@ -23,7 +23,7 @@ class _SharedBase(object):
         """
         self.name = name.upper()
         self.log = logging.getLogger("hiicart.gateway." + self.name)
-        self.settings = default_settings
+        self.settings = default_settings or {}
         self.settings.update(hiicart_settings)
         if self.name in self.settings:
             self.settings.update(hiicart_settings[self.name])
@@ -31,7 +31,7 @@ class _SharedBase(object):
 
     def _create_payment(self, cart, amount, transaction_id, state):
         """Record a payment."""
-        pmnt = Payment(amount=amount, gateway=self.name, cart=cart, 
+        pmnt = Payment(amount=amount, gateway=self.name, cart=cart,
                        state=state, transaction_id=transaction_id)
         pmnt.save()
         return pmnt
@@ -83,6 +83,11 @@ class PaymentGatewayBase(_SharedBase):
 
     Provides a common interface for working with all payment gateways.
     """
+    def __init__(self, name, cart, default_settings=None):
+        super(PaymentGatewayBase, self).__init__(name, default_settings)
+        self._update_with_cart_settings(cart)
+        self.cart = cart
+
     def _is_valid(self):
         """Returns True if the gateway is set up properly.
         NOTE: Will return Fase if using cart-specific settings and omitting
@@ -96,7 +101,7 @@ class PaymentGatewayBase(_SharedBase):
     def charge_recurring(self, cart, grace_period=None):
         """
         Charge recurring purchases if necessary.
-        
+
         Charges recurring items with the gateway, if possible. An optional
         grace period can be provided to avoid premature charging. This is
         provided since the gateway might be in another timezone, causing
@@ -117,7 +122,7 @@ class CancelResult(object):
     """
     The result of a cancel operation.
     Currently supported result types are url and None.
-    
+
     url: The user should to be redirected to result.url.
     None: type is set to None if no further action is required.
     """
@@ -132,7 +137,7 @@ class SubmitResult(object):
     """
     The result of a submit operation.
     Currently supported result types are url, form, and None.
-    
+
     url: The user should to be redirected to result.url.
     form: form_action is the target url; form_fields is a dict of form data.
     None: type is set to None if no further action is required.

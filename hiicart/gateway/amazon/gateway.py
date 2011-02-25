@@ -28,8 +28,8 @@ TEST_CBUI_URL = "https://authorize.payments-sandbox.amazon.com/cobranded-ui/acti
 class AmazonGateway(PaymentGatewayBase):
     """Payment Gateway for Amazon Payments."""
 
-    def __init__(self):
-        super(AmazonGateway, self).__init__("amazon", default_settings)
+    def __init__(self, cart):
+        super(AmazonGateway, self).__init__("amazon", cart, default_settings)
         self._require_settings(["AWS_KEY", "AWS_SECRET"])
 
     @property
@@ -40,22 +40,22 @@ class AmazonGateway(PaymentGatewayBase):
             url = mark_safe(TEST_CBUI_URL)
         return url
 
-    def _get_cbui_values(self, cart, collect_address=False):
+    def _get_cbui_values(self, collect_address=False):
         """Get the key/values to be used in a co-branded UI request."""
         values = {"callerKey" : self.settings["AWS_KEY"],
-                  "callerReference" : cart.cart_uuid,
+                  "callerReference" : self.cart.cart_uuid,
                   "SignatureMethod" : "HmacSHA256",
                   "SignatureVersion" : 2,
                   "version" : "2009-01-09",
                   "returnURL" : self.settings["CBUI_RETURN_URL"],
-                  "transactionAmount" : cart.total,
+                  "transactionAmount" : self.cart.total,
                   "collectShippingAddress": str(collect_address)}
-        if len(cart.recurring_lineitems) == 0:
+        if len(self.cart.recurring_lineitems) == 0:
             values["pipelineName"] = "SingleUse"
         else:
-            if len(cart.recurring_lineitems) > 1:
+            if len(self.cart.recurring_lineitems) > 1:
                 raise GatewayError("Only one recurring lineitem per cart.")
-            recurring = cart.recurring_lineitems[0]
+            recurring = self.cart.recurring_lineitems[0]
             values["pipelineName"] = "Recurring"
             values["recurringPeriod"] = "%s %s" % (
                     recurring.duration, recurring.duration_unit)
@@ -84,50 +84,47 @@ class AmazonGateway(PaymentGatewayBase):
         #TODO: Query Amazon to validate credentials
         return True
 
-    def cancel_recurring(self, cart):
+    def cancel_recurring(self):
         """Cancel recurring lineitem."""
-        if len(cart.recurring_lineitems) == 0:
+        if len(self.cart.recurring_lineitems) == 0:
             return
-        self._update_with_cart_settings(cart)
-        item = cart.recurring_lineitems[0]
+        item = self.cart.recurring_lineitems[0]
         token = item.payment_token
         response = fps.do_fps("CancelToken", "GET", self.settings, TokenId=token)
         item.is_active = False
         item.save()
-        cart.update_state()
+        self.cart.update_state()
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """
         Charge a cart's recurring item, if necessary.
         NOTE: Currently only one recurring item is supported per cart,
               so charge the first one found.
         """
-        self._update_with_cart_settings(cart)
         if not grace_period:
             grace_period = self.settings.get("CHARGE_RECURRING_GRACE_PERIOD", None)
-        recurring = [li for li in cart.recurring_lineitems if li.is_active]
+        recurring = [li for li in self.cart.recurring_lineitems if li.is_active]
         if not recurring or not recurring[0].is_expired(grace_period=grace_period):
             return
         item = recurring[0]
-        payments = cart.payments \
+        payments = self.cart.payments \
                     .filter(state="PAID") \
                     .order_by("-created")
-        payment_id= '%s-%i' % (cart.cart_uuid, len(payments)+1)
-        result = ipn.AmazonIPN().make_pay_request(cart, item.payment_token,
+        payment_id= '%s-%i' % (self.cart.cart_uuid, len(payments)+1)
+        result = ipn.AmazonIPN().make_pay_request(self.cart, item.payment_token,
                                                   payment_id)
         if result != "TokenUsageError" and result != "Pending" and result != "Success":
             # TokenUsageError is if we tried to charge too soon
             item.recurring = False
             item.save()
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Nothing to do here..."""
-        return cart
+        return self.cart
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False):
         """Submit the cart to Amazon's Co-Branded UI (CBUI)"""
-        self._update_with_cart_settings(cart)
-        values = self._get_cbui_values(cart, collect_address)
+        values = self._get_cbui_values(collect_address)
         values["Signature"] = fps.generate_signature("GET", values,
                                                      self._cbui_base_url,
                                                      self.settings)

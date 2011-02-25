@@ -37,8 +37,8 @@ POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
 class PaypalGateway(PaymentGatewayBase):
     """Paypal payment processor"""
 
-    def __init__(self):
-        super(PaypalGateway, self).__init__("paypal", default_settings)
+    def __init__(self, cart):
+        super(PaypalGateway, self).__init__("paypal", cart, default_settings)
         self._require_settings(["BUSINESS"])
         if self.settings["ENCRYPT"]:
             self._require_settings(["PRIVATE_KEY", "PUBLIC_KEY", "PUBLIC_CERT_ID"])
@@ -101,7 +101,7 @@ class PaypalGateway(PaymentGatewayBase):
         p7.write(out)
         return out.read()
 
-    def _get_form_data(self, cart):
+    def _get_form_data(self):
         """Creates a list of key,val to be sumbitted to PayPal."""
         account = self.settings["BUSINESS"]
         submit = SortedDict()
@@ -114,16 +114,16 @@ class PaypalGateway(PaymentGatewayBase):
         #      for now, we are saying "no shipping" and adding all shipping as
         #      a handling charge.
         submit["no_shipping"] = NO_SHIPPING["YES"]
-        submit["handling_cart"] = cart.shipping
-        submit["tax_cart"] = cart.tax
+        submit["handling_cart"] = self.cart.shipping
+        submit["tax_cart"] = self.cart.tax
         # Locale
         submit["lc"] = self.settings["LOCALE"]
-        submit["invoice"] = cart.cart_uuid
-        if len(cart.recurring_lineitems) > 1:
-            self.log.error("Cannot have more than one subscription in one order for paypal.  Only processing the first one for %s", cart)
+        submit["invoice"] = self.cart.cart_uuid
+        if len(self.cart.recurring_lineitems) > 1:
+            self.log.error("Cannot have more than one subscription in one order for paypal.  Only processing the first one for %s", self.cart)
             return
-        if len(cart.recurring_lineitems) > 0:
-            item = cart.recurring_lineitems[0]
+        if len(self.cart.recurring_lineitems) > 0:
+            item = self.cart.recurring_lineitems[0]
             submit["src"] = "1"
             submit["cmd"] = PAYMENT_CMD["SUBSCRIPTION"]
             submit["item_name"] = item.name
@@ -167,24 +167,24 @@ class PaypalGateway(PaymentGatewayBase):
             submit["cmd"] = PAYMENT_CMD["CART"]
             submit["upload"] = "1"
             ix = 1
-            for item in cart.one_time_lineitems:
+            for item in self.cart.one_time_lineitems:
                 submit["item_name_%i" % ix] = item.name
                 submit["amount_%i" % ix] = item.unit_price.quantize(Decimal(".01"))
                 submit["quantity_%i" % ix] = item.quantity
                 ix += 1
-        if cart.bill_street1:
-            submit["first_name"] = cart.first_name
-            submit["last_name"] = cart.last_name
-            submit["address1"] = cart.bill_street1
-            submit["address2"] = cart.bill_street2
-            submit["city"] = cart.bill_city
-            submit["country"] = cart.bill_country
-            submit["zip"] = cart.bill_postal_code
-            submit["email"] = cart.email
+        if self.cart.bill_street1:
+            submit["first_name"] = self.cart.first_name
+            submit["last_name"] = self.cart.last_name
+            submit["address1"] = self.cart.bill_street1
+            submit["address2"] = self.cart.bill_street2
+            submit["city"] = self.cart.bill_city
+            submit["country"] = self.cart.bill_country
+            submit["zip"] = self.cart.bill_postal_code
+            submit["email"] = self.cart.email
             submit["address_override"] = "0"
             # only U.S. abbreviations may be used here
-            if cart.bill_country.lower() == "us" and len(cart.bill_state) == 2:
-                submit["state"] = cart.bill_state
+            if self.cart.bill_country.lower() == "us" and len(self.cart.bill_state) == 2:
+                submit["state"] = self.cart.bill_state
         return submit
 
     def _is_valid(self):
@@ -192,27 +192,25 @@ class PaypalGateway(PaymentGatewayBase):
         # Can't validate credentials with Paypal AFAIK
         return True
 
-    def cancel_recurring(self, cart):
+    def cancel_recurring(self):
         """Cancel recurring items with gateway. Returns a CancelResult."""
-        self._update_with_cart_settings(cart)
         alias = self.settings["BUSINESS"]
         url = "%s?cmd=%s&alias=%s" % (self.submit_url,
                                       PAYMENT_CMD["UNSUBSCRIBE"],
                                       self.settings["BUSINESS"])
         return CancelResult("url", url=url)
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """This Paypal API doesn't support manually charging subscriptions."""
         pass
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Nothing to fix here."""
         pass
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False):
         """Submit a cart to the gateway. Returns a SubmitResult."""
-        self._update_with_cart_settings(cart)
-        data = self._get_form_data(cart)
+        data = self._get_form_data(self.cart)
         if self.settings["ENCRYPT"]:
             data = {"encrypted": self._encrypt_data(data)}
         return SubmitResult("form", form_data={"action": self.submit_url,

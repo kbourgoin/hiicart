@@ -11,8 +11,8 @@ from hiicart.gateway.google.settings import SETTINGS as default_settings
 class GoogleGateway(PaymentGatewayBase):
     """Payment Gateway for Google Checkout."""
 
-    def __init__(self):
-        super(GoogleGateway, self).__init__("google", default_settings)
+    def __init__(self, cart):
+        super(GoogleGateway, self).__init__("google", cart, default_settings)
         self._require_settings(["MERCHANT_ID", "MERCHANT_KEY"])
 
     @property
@@ -46,15 +46,15 @@ class GoogleGateway(PaymentGatewayBase):
         params = urllib.urlencode(params)
         return http.request(url, "POST", params, headers=headers)
 
-    def cancel_recurring(self, cart):
+    def cancel_recurring(self):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         # Cancellation is a problem beacuse it requires refund. Need to find a way around this.
         # May have to redirect users to subscription page like Paypal does.
         raise NotImplementedError
-        #if cart.payments.count() == 0 or len(cart.recurring_lineitems) == 0:
+        #if self.cart.payments.count() == 0 or len(self.cart.recurring_lineitems) == 0:
         #    return
-        #payment = cart.payments.all()[0]
-        #item = cart.recurring_lineitems[0]
+        #payment = self.cart.payments.all()[0]
+        #item = self.cart.recurring_lineitems[0]
         #params = {"_type" : "cancel-items",
         #          "google-order-number": payment.transaction_id,
         #          "reason" : "",
@@ -66,7 +66,7 @@ class GoogleGateway(PaymentGatewayBase):
         #item.is_active = False
         #item.save()
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """HiiCart doesn't currently support manually charging subscriptions with Google Checkout"""
         pass
 
@@ -75,21 +75,20 @@ class GoogleGateway(PaymentGatewayBase):
         return base64.b64encode("%s:%s" % (self.settings["MERCHANT_ID"],
                                            self.settings["MERCHANT_KEY"]))
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Remove any gateway-specific changes to a cloned cart."""
         pass
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False):
         """Submit a cart to Google Checkout.
 
         Google Checkout's submission process is:
           * Construct an xml representation of the cart
           * Post the xml to Checkout, using HTTP Basic Auth
           * Checkout returns a url to redirect the user to"""
-        self._update_with_cart_settings(cart)
         # Construct cart xml
         template = loader.get_template("gateway/google/cart.xml")
-        ctx = Context({"cart" : cart,
+        ctx = Context({"cart" : self.cart,
                        "continue_shopping_url" : self.settings.get("SHOPPING_URL", None),
                        "edit_cart_url" : self.settings.get("EDIT_URL", None),
                        "currency" : self.settings["CURRENCY"]})

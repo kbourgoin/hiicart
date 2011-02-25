@@ -13,9 +13,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.fields import DecimalField
 from django.utils.safestring import mark_safe
-from logging.handlers import RotatingFileHandler
-
 from hiicart.settings import SETTINGS as hiicart_settings
+from logging.handlers import RotatingFileHandler
 
 log = logging.getLogger("hiicart.models")
 
@@ -81,30 +80,6 @@ class HiiCartError(Exception):
     pass
 
 ### Private Functions
-
-def _get_gateway(name):
-    """Factory to get payment gateways."""
-    # importing now prevents circular import issues.
-    from hiicart.gateway.amazon.gateway import AmazonGateway
-    from hiicart.gateway.comp.gateway import CompGateway
-    from hiicart.gateway.google.gateway import GoogleGateway
-    from hiicart.gateway.paypal.gateway import PaypalGateway
-    from hiicart.gateway.paypal2.gateway import Paypal2Gateway
-    from hiicart.gateway.paypal_adaptive.gateway import PaypalAPGateway
-    if name == "amazon":
-        return AmazonGateway()
-    elif name == "comp":
-        return CompGateway()
-    elif name == "google":
-        return GoogleGateway()
-    elif name == "paypal":
-        return PaypalGateway()
-    elif name == "paypal2":
-        return Paypal2Gateway()
-    elif name == "paypal_adaptive":
-        return PaypalAPGateway()
-    else:
-        raise HiiCartError("Unknown gateway: %s" % name)
 
 ### Models
 
@@ -317,7 +292,32 @@ class HiiCart(models.Model):
         """Get the PaymentGateway associated with this cart or None if cart has not been submitted yet.."""
         if self.gateway is None:
             return None
-        return _get_gateway(self.gateway)
+        return self._get_gateway(self.gateway)
+
+    def _get_gateway(self, name):
+        # importing now prevents circular import issues.
+        from hiicart.gateway.amazon.gateway import AmazonGateway
+        from hiicart.gateway.comp.gateway import CompGateway
+        from hiicart.gateway.google.gateway import GoogleGateway
+        from hiicart.gateway.paypal.gateway import PaypalGateway
+        from hiicart.gateway.paypal2.gateway import Paypal2Gateway
+        from hiicart.gateway.paypal_adaptive.gateway import PaypalAPGateway
+
+        """Factory to get payment gateways."""
+        if name == "amazon":
+            return AmazonGateway(self)
+        elif name == "comp":
+            return CompGateway(self)
+        elif name == "google":
+            return GoogleGateway(self)
+        elif name == "paypal":
+            return PaypalGateway(self)
+        elif name == "paypal2":
+            return Paypal2Gateway(self)
+        elif name == "paypal_adaptive":
+            return PaypalAPGateway(self)
+        else:
+            raise HiiCartError("Unknown gateway: %s" % name)
 
     def save(self, *args, **kwargs):
         """Override to recalculate total and signal on state change."""
@@ -344,7 +344,7 @@ class HiiCart(models.Model):
 
     def submit(self, gateway_name, collect_address=False):
         """Submit this cart to a payment gateway."""
-        gateway = _get_gateway(gateway_name)
+        gateway = self._get_gateway(gateway_name)
         self.gateway = gateway_name
         self.set_state("SUBMITTED")
         return gateway.submit(self, collect_address)

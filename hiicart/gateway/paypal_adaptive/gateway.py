@@ -15,9 +15,8 @@ POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
 class PaypalAPGateway(PaymentGatewayBase):
     """Payment Gateway for Paypal Adaptive Payments."""
 
-    def __init__(self):
-        super(PaypalAPGateway, self).__init__("paypal_adaptive",
-                                              default_settings)
+    def __init__(self, cart):
+        super(PaypalAPGateway, self).__init__("paypal_adaptive", cart, default_settings)
         self._require_settings(["APP_ID", "PASSWORD", "SIGNATURE", "USERID"])
 
     @property
@@ -45,30 +44,29 @@ class PaypalAPGateway(PaymentGatewayBase):
         # TODO: Query Paypal to validate credentials
         return True
 
-    def cancel_recurring(self, cart):
+    def cancel_recurring(self):
         """Cancel recurring lineitem."""
         raise GatewayError("Adaptive Payments doesn't support recurring payments.")
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
         raise GatewayError("Adaptive Payments doesn't support recurring payments.")
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Nothing to do here..."""
-        return cart
+        return self.cart
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False):
         """Submit the cart to the Paypal Adaptive Payments API"""
-        if len(cart.recurring_lineitems) > 0:
+        if len(self.cart.recurring_lineitems) > 0:
             raise GatewayError("Adaptive Payments doesn't support recurring payments.")
-        self._update_with_cart_settings(cart)
         params = {"actionType": "PAY",
                   "currencyCode": "USD",
                   "feesPayer": "EACHRECEIVER",
                   "cancelUrl": self.settings["CANCEL_URL"],
                   "returnUrl": self.settings["RETURN_URL"],
                   "ipnNotificationUrl": self.ipn_url,
-                  "trackingId": cart.cart_uuid,
+                  "trackingId": self.cart.cart_uuid,
                 }
         for i, r in enumerate(self.settings["RECEIVERS"]):
             params["receiverList.receiver(%i).email" % i] = r[0]
