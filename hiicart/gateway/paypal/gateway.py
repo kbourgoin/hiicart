@@ -210,7 +210,7 @@ class PaypalGateway(PaymentGatewayBase):
 
     def submit(self, collect_address=False):
         """Submit a cart to the gateway. Returns a SubmitResult."""
-        data = self._get_form_data(self.cart)
+        data = self._get_form_data()
         if self.settings["ENCRYPT"]:
             data = {"encrypted": self._encrypt_data(data)}
         return SubmitResult("form", form_data={"action": self.submit_url,
