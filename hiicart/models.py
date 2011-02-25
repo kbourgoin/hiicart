@@ -198,6 +198,7 @@ class HiiCart(models.Model):
 
     def _get_lineitems(self, cls_list):
         l = [cls.objects.filter(cart=self) for cls in cls_list]
+        import ipdb; ipdb.set_trace()
         return [item for sublist in l for item in sublist]
 
     def _is_valid_transition(self, old, new):
@@ -428,6 +429,14 @@ class LineItemBase(models.Model):
         """Override save to recalc before saving."""
         self._recalc()
         super(LineItemBase, self).save(*args, **kwargs)
+
+    @property
+    def sub_total(self):
+        raise NotImplementedError()
+
+    @property
+    def total(self):
+        raise NotImplementedError()
 
 
 class OneTimeLineItemBase(LineItemBase):
