@@ -49,7 +49,7 @@ HIICART_STATES = (("OPEN", "Open"),
                   ("COMPLETED", "Completed"),
                   ("RECURRING", "Recurring"), # Subscription active
                   ("PENDCANCEL", "Pending Cancellation"), # Subscription cancelled, but not expired yet
-                  ("CANCELELD", "Cancelled"))
+                  ("CANCELLED", "Cancelled"))
 
 PAYMENT_STATES = (("PENDING", "Pending"),
                   ("PAID", "Paid"),
