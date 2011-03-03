@@ -171,6 +171,8 @@ class PaypalGateway(PaymentGatewayBase):
                 submit["item_name_%i" % ix] = item.name
                 submit["amount_%i" % ix] = item.unit_price.quantize(Decimal(".01"))
                 submit["quantity_%i" % ix] = item.quantity
+                submit["on0_%i" % ix] = "SKU"
+                submit["os0_%i" % ix] = item.sku
                 ix += 1
         if self.cart.bill_street1:
             submit["first_name"] = self.cart.first_name
