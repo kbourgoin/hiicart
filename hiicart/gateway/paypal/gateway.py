@@ -19,6 +19,7 @@ PAYMENT_CMD = {
     "UNSUBSCRIBE" : "_subscr-find"
     }
 NO_SHIPPING = {
+    "REQUIRE": "2",
     "NO" : "1",
     "YES" : "0"
     }
@@ -103,17 +104,29 @@ class PaypalGateway(PaymentGatewayBase):
 
     def _get_form_data(self):
         """Creates a list of key,val to be sumbitted to PayPal."""
-        account = self.settings["BUSINESS"]
         submit = SortedDict()
-        submit["business"] = account
+        submit["business"] = self.settings["BUSINESS"]
         submit["currency_code"] = self.settings["CURRENCY_CODE"]
         submit["notify_url"] = self.settings["IPN_URL"]
-        if self.settings["RETURN_ADDRESS"]:
+        if self.settings.get("CHARSET"):
+            submit["charset"] = self.settings["CHARSET"]
+        if self.settings.get("RETURN_ADDRESS"):
             submit["return"] = self.settings["RETURN_ADDRESS"]
+        if self.settings.get("RM"):
+            submit["rm"] = self.settings["RM"]
+        if self.settings.get("SHOPPING_URL"):
+            submit["shopping_url"] = self.settings["SHOPPING_URL"]
+        if self.settings.get("CANCEL_RETURN"):
+            submit["cancel_return"] = self.settings["CANCEL_RETURN"]
+        if self.settings.get("CBT"):
+            submit["cbt"] = self.settings["CBT"]
         #TODO: eventually need to work out the terrible PayPal shipping stuff
         #      for now, we are saying "no shipping" and adding all shipping as
         #      a handling charge.
-        submit["no_shipping"] = NO_SHIPPING["YES"]
+        if self.settings.get("NO_SHIPPING"):
+            submit["no_shipping"] = self.settings["NO_SHIPPING"]
+        else:
+            submit["no_shipping"] = NO_SHIPPING["YES"]
         submit["handling_cart"] = self.cart.shipping
         submit["tax_cart"] = self.cart.tax
         # Locale
