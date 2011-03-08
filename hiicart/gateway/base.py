@@ -41,8 +41,7 @@ class _SharedBase(object):
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
         if hiicart_settings["STORE_SETTINGS_FN"]:
-            store_settings_kwargs = store_settings_kwargs or {}
-            s = call_func(hiicart_settings["STORE_SETTINGS_FN"], cart, **store_settings_kwargs)
+            s = call_func(hiicart_settings["STORE_SETTINGS_FN"], cart)
             if s:
                 self.settings.update(s)
                 return
