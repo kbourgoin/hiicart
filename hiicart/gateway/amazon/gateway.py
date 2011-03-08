@@ -43,7 +43,7 @@ class AmazonGateway(PaymentGatewayBase):
     def _get_cbui_values(self, collect_address=False):
         """Get the key/values to be used in a co-branded UI request."""
         values = {"callerKey" : self.settings["AWS_KEY"],
-                  "callerReference" : self.cart.cart_uuid,
+                  "CallerReference" : self.cart.cart_uuid,
                   "SignatureMethod" : "HmacSHA256",
                   "SignatureVersion" : 2,
                   "version" : "2009-01-09",
