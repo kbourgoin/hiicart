@@ -36,7 +36,6 @@ class AmazonIPN(IPNBase):
 
     def accept_payment(self, cart, data):
         """Record payment received from IPN."""
-        self._update_with_cart_settings(cart)
         total = None
         if "transactionAmount" in data and data["transactionAmount"].startswith("USD "):
             total = Decimal(data["transactionAmount"][4:])
@@ -74,7 +73,6 @@ class AmazonIPN(IPNBase):
 
     def begin_recurring(self, cart):
         """Save token and mark recurring item as active."""
-        self._update_with_cart_settings(cart)
         if len(cart.recurring_lineitems) == 0:
             return
         for ri in cart.recurring_lineitems:
@@ -84,7 +82,6 @@ class AmazonIPN(IPNBase):
 
     def end_recurring(self, cart, token):
         """Mark a recurring item as inactive."""
-        self._update_with_cart_settings(cart)
         if len(cart.recurring_lineitems) == 0:
             return
         for ri in cart.recurring_lineitems:
@@ -97,7 +94,7 @@ class AmazonIPN(IPNBase):
         Make a Pay request for the purchase with the given token.
         Return status received from Amazon.
         """
-        self._update_with_cart_settings(cart)
+        self._update_with_store_settings(cart)
         if caller_reference is None:
             caller_reference = cart.cart_uuid
         response = fps.do_fps("Pay", "GET", self.settings,
@@ -146,7 +143,6 @@ class AmazonIPN(IPNBase):
 
     def save_recurring_token(self, cart, token):
         """Save recurring use token for future use."""
-        self._update_with_cart_settings(cart)
         if len(cart.recurring_lineitems) == 0:
             return
         ri = cart.recurring_lineitems[0]
@@ -154,7 +150,7 @@ class AmazonIPN(IPNBase):
         ri.save()
 
     def verify_signature(self, raw_data, http_method, endpoint_uri, cart):
-        self._update_with_cart_settings(cart)
+        self._update_with_store_settings(cart)
         response = fps.do_fps("VerifySignature", http_method, self.settings,
                               UrlEndPoint=endpoint_uri,
                               HttpParameters=raw_data)
