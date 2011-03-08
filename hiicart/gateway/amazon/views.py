@@ -17,7 +17,7 @@ log = logging.getLogger("hiicart.gateway.amazon")
 def _find_cart(request_data):
     try:
         # Subscription payments look like '<uuid>-4' so grab the uuid id
-        uuid = request_data["CallerReference"][:36]
+        uuid = request_data["callerReference"][:36]
         return HiiCart.objects.get(_cart_uuid=uuid)
     except HiiCart.DoesNotExist:
         return None
