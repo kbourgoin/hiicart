@@ -36,6 +36,18 @@ class _SharedBase(object):
         pmnt.save()
         return pmnt
 
+    def _update_with_store_settings(self, cart):
+        """Pull cart-specific settings and update self.settings with them.
+        We need an DI facility to get cart-specific settings in. This way,
+        we're able to have different carts use different google accounts."""
+        if hiicart_settings["STORE_SETTINGS_FN"]:
+            store_settings_kwargs = store_settings_kwargs or {}
+            s = call_func(hiicart_settings["STORE_SETTINGS_FN"], cart, **store_settings_kwargs)
+            if s:
+                self.settings.update(s)
+                return
+        self.settings = self._settings_base.copy() # reset to defaults
+
     def _update_with_cart_settings(self, cart, cart_settings_kwargs):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
@@ -86,6 +98,7 @@ class PaymentGatewayBase(_SharedBase):
     """
     def __init__(self, name, cart, default_settings=None):
         super(PaymentGatewayBase, self).__init__(name, default_settings)
+        self._update_with_store_settings(cart)
         self.cart = cart
 
     def _is_valid(self):
