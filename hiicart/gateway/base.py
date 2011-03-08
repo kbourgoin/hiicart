@@ -36,12 +36,13 @@ class _SharedBase(object):
         pmnt.save()
         return pmnt
 
-    def _update_with_cart_settings(self, cart):
+    def _update_with_cart_settings(self, cart, cart_settings_kwargs):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
         if hiicart_settings["CART_SETTINGS_FN"]:
-            s = call_func(hiicart_settings["CART_SETTINGS_FN"], cart)
+            cart_settings_kwargs = cart_settings_kwargs or {}
+            s = call_func(hiicart_settings["CART_SETTINGS_FN"], cart, **cart_settings_kwargs)
             if s:
                 self.settings.update(s)
                 return
@@ -85,7 +86,6 @@ class PaymentGatewayBase(_SharedBase):
     """
     def __init__(self, name, cart, default_settings=None):
         super(PaymentGatewayBase, self).__init__(name, default_settings)
-        self._update_with_cart_settings(cart)
         self.cart = cart
 
     def _is_valid(self):
@@ -113,7 +113,7 @@ class PaymentGatewayBase(_SharedBase):
         """Remove any gateway-specific changes to a cloned cart."""
         raise NotImplementedError
 
-    def submit(self, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to the gateway. Returns a SubmitResult."""
         raise NotImplementedError
 

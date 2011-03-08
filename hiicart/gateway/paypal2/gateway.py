@@ -42,10 +42,11 @@ class Paypal2Gateway(PaymentGatewayBase):
         """Nothing to do here..."""
         return self.cart
 
-    def submit(self, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit the cart to the Paypal"""
         # NOTE: This is possible in Paypal, but I don't have time to
         #       implement it right now.
+        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
         if len(self.cart.one_time_lineitems) > 0 and len(self.cart.recurring_lineitems) > 0:
             raise Paypal2GatewayError("Recurring and Non-Recurring items can't be mixed.")
         result = api.set_express_checkout(self.cart, self.settings, collect_address)

@@ -122,8 +122,9 @@ class AmazonGateway(PaymentGatewayBase):
         """Nothing to do here..."""
         return self.cart
 
-    def submit(self, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit the cart to Amazon's Co-Branded UI (CBUI)"""
+        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
         values = self._get_cbui_values(collect_address)
         values["Signature"] = fps.generate_signature("GET", values,
                                                      self._cbui_base_url,

@@ -42,7 +42,7 @@ class PaypalGateway(PaymentGatewayBase):
         self._require_settings(["BUSINESS"])
         if self.settings["ENCRYPT"]:
             self._require_settings(["PRIVATE_KEY", "PUBLIC_KEY", "PUBLIC_CERT_ID"])
-            self.localprikey = self.settings[ "PRIVATE_KEY"]
+            self.localprikey = self.settings["PRIVATE_KEY"]
             self.localpubkey = self.settings["PUBLIC_KEY"]
             self.paypalpubkey = os.path.abspath(os.path.join(
                 os.path.dirname(__file__),
@@ -210,8 +210,9 @@ class PaypalGateway(PaymentGatewayBase):
         """Nothing to fix here."""
         pass
 
-    def submit(self, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to the gateway. Returns a SubmitResult."""
+        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
         data = self._get_form_data()
         if self.settings["ENCRYPT"]:
             data = {"encrypted": self._encrypt_data(data)}

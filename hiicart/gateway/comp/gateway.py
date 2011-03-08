@@ -38,8 +38,9 @@ class CompGateway(PaymentGatewayBase):
         """Nothing gateway-specific here."""
         pass
 
-    def submit(self, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit cart. Returns None because comp is instantaneous."""
+        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
         payment = self._create_payment(self.cart, self.cart.total, None, "PAID")
         if self.settings.get("ALLOW_RECURRING_COMP", False):
             for ri in self.cart.recurring_lineitems:

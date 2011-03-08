@@ -118,7 +118,7 @@ class HiiCart(models.Model):
     tax = DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
     shipping = DecimalField("Shipping Cost", max_digits=18, decimal_places=2, blank=True, null=True)
     shipping_option_name = models.CharField(max_length=50, blank=True, null=True)
-    # Customer Info 
+    # Customer Info
     first_name = models.CharField("First name", max_length=30, default="")
     last_name = models.CharField("Last name", max_length=30, default="")
     email = models.EmailField("Email", max_length=75, default="")
@@ -343,12 +343,12 @@ class HiiCart(models.Model):
         self._cart_state = newstate
         self.save()
 
-    def submit(self, gateway_name, collect_address=False):
+    def submit(self, gateway_name, collect_address=False, cart_settings_kwargs=None):
         """Submit this cart to a payment gateway."""
         gateway = self._get_gateway(gateway_name)
         self.gateway = gateway_name
         self.set_state("SUBMITTED")
-        return gateway.submit(collect_address)
+        return gateway.submit(collect_address, cart_settings_kwargs)
 
     def update_state(self):
         """
