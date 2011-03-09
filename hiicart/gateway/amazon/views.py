@@ -2,7 +2,7 @@ import logging
 import pprint
 import xml.etree.cElementTree as ET
 
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
@@ -87,11 +87,10 @@ def ipn(request):
     handler._update_with_cart_settings(cart, cart_settings_kwargs={'request': request})
     if not handler.verify_signature(request.POST.urlencode(), "POST", handler.settings["IPN_URL"], cart):
         log.error("Validation of Amazon request failed!")
-        return HttpResponse("Validation of Amazon request failed!")
-    cart = _find_cart(request.POST)
+        return HttpResponseBadRequest("Validation of Amazon request failed!")
     if not cart:
         log.error("Unable to find HiiCart.")
-        return HttpResponse()
+        return HttpResponseBadRequest()
     if request.POST["notificationType"] == "TransactionStatus":
         handler.accept_payment(cart, request.POST)
     elif request.POST["notificationType"] == "TokenCancellation":
