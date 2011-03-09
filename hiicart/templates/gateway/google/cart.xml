@@ -17,7 +17,7 @@
 	        <digital-content>
 	          <description>{{ lineitem.thankyou }}</description>
 	        </digital-content>
-          {% endfor %}
+          {% endif %}
         </item>
       {% endfor %}
       {% for lineitem in cart.recurring_lineitems %}
