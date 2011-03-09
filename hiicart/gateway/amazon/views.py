@@ -84,6 +84,7 @@ def ipn(request):
     log.debug("IPN Received: \n%s" % pprint.pformat(dict(request.POST), indent=10))
     handler = AmazonIPN()
     cart = _find_cart(request.POST)
+    handler._update_with_cart_settings(cart, cart_settings_kwargs={'request': request})
     if not handler.verify_signature(request.POST.urlencode(), "POST", handler.settings["IPN_URL"], cart):
         log.error("Validation of Amazon request failed!")
         return HttpResponse("Validation of Amazon request failed!")
