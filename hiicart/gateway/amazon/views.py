@@ -35,6 +35,7 @@ def cbui(request, settings=None):
     log.debug("CBUI Received: \n%s" % pprint.pformat(dict(request.GET), indent=10))
     handler = AmazonIPN()
     cart = _find_cart(request.GET)
+    handler._update_with_cart_settings(cart, cart_settings_kwargs={'request': request})
     if not handler.verify_signature(request.GET.urlencode(), "GET", handler.settings["CBUI_RETURN_URL"], cart):
         log.error("Validation of Amazon request failed!")
         return HttpResponseRedirect(handler.settings.get("ERROR_RETURN_URL",
