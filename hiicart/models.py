@@ -116,6 +116,7 @@ class HiiCart(models.Model):
     _sub_total = DecimalField("Subtotal", max_digits=18, decimal_places=2, blank=True, null=True)
     _total = DecimalField("Total", max_digits=18, decimal_places=2)
     tax = DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
+    tax_rate = DecimalField("Tax", max_digits=6, decimal_places=5, blank=True, null=True)
     shipping = DecimalField("Shipping Cost", max_digits=18, decimal_places=2, blank=True, null=True)
     shipping_option_name = models.CharField(max_length=50, blank=True, null=True)
     # Customer Info
