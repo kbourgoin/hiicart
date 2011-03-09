@@ -13,9 +13,11 @@
           <quantity>{{ lineitem.quantity }}</quantity>
 	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
   	      <unit-price currency="{{ currency }}">{{ lineitem.unit_price|floatformat:2 }}</unit-price>
+          {% if lineitem.thankyou %}
 	        <digital-content>
 	          <description>{{ lineitem.thankyou }}</description>
 	        </digital-content>
+          {% endfor %}
         </item>
       {% endfor %}
       {% for lineitem in cart.recurring_lineitems %}
@@ -24,9 +26,11 @@
           <item-description>{{ lineitem.description }}</item-description>
           <quantity>{{ lineitem.quantity }}</quantity>
 	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
+            {% if lineitem.thankyou %}
 	        <digital-content>
 	          <description>{{ lineitem.thankyou }}</description>
 	        </digital-content>
+            {% endif %}
           {% if  lineitem.recurring_start %}
           <unit-price currency="{{ currency }}">0.00</unit-price>
           {% else %}
@@ -49,9 +53,11 @@
 	            <merchant-private-item-data>
                 <hiicart-purchase id="{{ cart.cart_uuid }}" />
 	            </merchant-private-item-data>
-              <digital-content>
+                {% if lineitem.thankyou %}
+                <digital-content>
 	              <description>{{ lineitem.thankyou }}</description>
 	            </digital-content>
+                {% endif %}
 	          </recurrent-item>
 	        </subscription>
         </item>
