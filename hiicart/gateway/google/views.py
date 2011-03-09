@@ -5,13 +5,13 @@ import httplib2
 import logging
 import xml.etree.cElementTree as ET
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 
 from hiicart.gateway.base import GatewayError
 from hiicart.gateway.google.gateway import GoogleGateway
-from hiicart.gateway.google.ipn import GoogleIPN 
+from hiicart.gateway.google.ipn import GoogleIPN
 from hiicart.utils import format_exceptions, call_func
 
 log = logging.getLogger("hiicart.gateway.google")
@@ -22,7 +22,7 @@ log = logging.getLogger("hiicart.gateway.google")
 def ipn(request):
     """View to receive notifications from Google"""
     if request.method != "POST":
-        return HttpResponse("Requests must be POSTed")
+        return HttpResponseBadRequest("Requests must be POSTed")
     data = request.POST
     log.info("IPN Notification received from Google Checkout: %s" % data)
     # Check credentials
