@@ -43,7 +43,6 @@ def _find_cart(data):
     return carts[0] if carts else None
 
 
-
 @csrf_view_exempt
 @format_exceptions
 @never_cache
@@ -54,7 +53,8 @@ def ipn(request):
     data = request.POST
     log.info("IPN Notification received from Google Checkout: %s" % data)
     # Check credentials
-    gateway = GoogleGateway()
+    cart = _find_cart(data)
+    gateway = GoogleGateway(cart)
     if gateway.settings.get("IPN_AUTH_VALS", False):
         mine = call_func(gateway.settings["IPN_AUTH_VALS"])
     else:
@@ -67,7 +67,6 @@ def ipn(request):
         return response
     # Handle the notification
     type = data["_type"]
-    cart = _find_cart(data)
     handler = GoogleIPN(cart)
     if type == "new-order-notification":
         handler.new_order(data)

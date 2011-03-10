@@ -7,6 +7,8 @@ from django.template import Context, loader
 
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 from hiicart.gateway.google.settings import SETTINGS as default_settings
+from hiicart.lib.unicodeconverter import convertToUTF8
+
 
 class GoogleGateway(PaymentGatewayBase):
     """Payment Gateway for Google Checkout."""
@@ -89,14 +91,37 @@ class GoogleGateway(PaymentGatewayBase):
         # Construct cart xml
         self._update_with_cart_settings(cart_settings_kwargs)
         template = loader.get_template("gateway/google/cart.xml")
-        ctx = Context({"cart" : self.cart,
-                       "continue_shopping_url" : self.settings.get("SHOPPING_URL", None),
-                       "edit_cart_url" : self.settings.get("EDIT_URL", None),
-                       "currency" : self.settings["CURRENCY"]})
-        cart_xml = template.render(ctx)
+        # cart = {'cart_uuid': self.cart.cart_uuid,
+        #         'thankyou': convertToUTF8(self.cart.cart_uuid),
+        #         'shipping': self.cart.shipping,
+        #         'shipping_option_name': convertToUTF8(self.cart.shipping_option_name),
+        #         'tax_rate': self.cart.tax_rate}
+        # one_time_lineitems = []
+        # for l in self.cart.one_time_lineitems:
+        #     one_time_lineitems.append({'name': convertToUTF8(l.name),
+        #                                'description': convertToUTF8(l.description),
+        #                                'sku': convertToUTF8(l.sku),
+        #                                'quantity': l.quantity,
+        #                                'unit_price': l.unit_price})
+        # recurring_lineitems = []
+        # for l in self.cart.recurring_lineitems:
+        #     recurring_lineitems.append({'name': convertToUTF8(l.name),
+        #                                 'description': convertToUTF8(l.description),
+        #                                 'sku': convertToUTF8(l.sku),
+        #                                 'quantity': l.quantity,
+        #                                 'unit_price': l.recurring_price,
+        #                                 'recurring_start': l.recurring_start,
+        #                                 'total': l.total})
+        ctx = Context({"cart": self.cart,
+                       # "one_time_lineitems": one_time_lineitems,
+                       # "recurring_lineitems": recurring_lineitems,
+                       "continue_shopping_url": self.settings.get("SHOPPING_URL", None),
+                       "edit_cart_url": self.settings.get("EDIT_URL", None),
+                       "currency": self.settings["CURRENCY"]})
+        cart_xml = convertToUTF8(template.render(ctx))
         # Post to Google
-        headers = {"Content-type" : "application/x-www-form-urlencoded",
-                   "Authorization" : "Basic %s" % self.get_basic_auth()}
+        headers = {"Content-type": "application/x-www-form-urlencoded",
+                   "Authorization": "Basic %s" % self.get_basic_auth()}
         http = httplib2.Http()
         response, content = http.request(self._cart_url, "POST", cart_xml,
                                          headers=headers)
