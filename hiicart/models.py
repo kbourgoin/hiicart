@@ -136,6 +136,7 @@ class HiiCart(models.Model):
     bill_state = models.CharField("State", max_length=50, default="")
     bill_postal_code = models.CharField("Zip Code", max_length=30, default="")
     bill_country = models.CharField("Country", max_length=2, default="")
+    thankyou = models.CharField("Thank you message.", max_length=255, blank=True, null=True)
     created = models.DateTimeField("Created", auto_now_add=True)
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
 
@@ -402,7 +403,6 @@ class LineItemBase(models.Model):
     ordering = models.PositiveIntegerField("Ordering", default=0)
     quantity = models.PositiveIntegerField("Quantity")
     sku = models.CharField("SKU", max_length=255, default="1", db_index=True)
-    thankyou = models.CharField("Thank you message.", max_length=255)
 
     class Meta:
         abstract = True

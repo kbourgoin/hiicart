@@ -26,19 +26,14 @@
           <item-description>{{ lineitem.description }}</item-description>
           <quantity>{{ lineitem.quantity }}</quantity>
 	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
-            {% if lineitem.thankyou %}
-	        <digital-content>
-	          <description>{{ lineitem.thankyou }}</description>
-	        </digital-content>
-            {% endif %}
-          {% if  lineitem.recurring_start %}
+          {% if lineitem.recurring_start %}
           <unit-price currency="{{ currency }}">0.00</unit-price>
           {% else %}
           <unit-price currency="{{ currency }}">{{ lineitem.recurring_price|floatformat:2 }}</unit-price>
           {% endif %}
           <subscription type="google"
                         period="{% google_recur_period lineitem %}"
-                        {% if  lineitem.recurring_start %}start-date="{{lineitem.recurring_start|date:"c"}}" {% endif %}>
+                        {% if lineitem.recurring_start %}start-date="{{lineitem.recurring_start|date:"c"}}"{% endif %}>
 	          <payments>
 	            <subscription-payment>
 	              <maximum-charge currency="{{ currency }}">{{ lineitem.total|floatformat:2 }}</maximum-charge>
@@ -53,27 +48,25 @@
 	            <merchant-private-item-data>
                 <hiicart-purchase id="{{ cart.cart_uuid }}" />
 	            </merchant-private-item-data>
-                {% if lineitem.thankyou %}
-                <digital-content>
-	              <description>{{ lineitem.thankyou }}</description>
-	            </digital-content>
-                {% endif %}
 	          </recurrent-item>
 	        </subscription>
         </item>
       {% endfor %}
     </items>
+    {% if lineitem.thankyou %}
+    <buyer-messages>
+      <buyer-note>{{ lineitem.thankyou }}</buyer-note>
+    </buyer-messages>
+    {% endif %}
   </shopping-cart>
   <checkout-flow-support>
     <merchant-checkout-flow-support>
-      {% if edit_cart_url %}<edit-cart-url>{{ edit_cart_url }}</edit-cart-url>{% endif %}
-      {% if continue_shopping_url %}<continue-shopping-url>{{ continue_shopping_url }}</continue-shopping-url>{% endif %}
+      {% if edit_cart_url %}
+      <edit-cart-url>{{ edit_cart_url }}</edit-cart-url>
+      {% endif %}
+      {% if continue_shopping_url %}
+      <continue-shopping-url>{{ continue_shopping_url }}</continue-shopping-url>
+      {% endif %}
     </merchant-checkout-flow-support>
   </checkout-flow-support>
 </checkout-shopping-cart>
-{% comment %}
-
-  To be used later
-
-
-  {% endcomment %}
