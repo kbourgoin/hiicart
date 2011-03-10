@@ -103,8 +103,8 @@ class GoogleIPN(IPNBase):
         if not payment:
             return
         # Save buyer information if not already there
-        self.cart.first_name = self.cart.first_name or data["buyer-billing-address.structured-name.first-name"]
-        self.cart.last_name = self.cart.last_name or data["buyer-billing-address.structured-name.last-name"]
+        self.cart.first_name = self.cart.first_name or data.get("buyer-billing-address.structured-name.first-name")
+        self.cart.last_name = self.cart.last_name or data.get("buyer-billing-address.structured-name.last-name")
         self.cart.email = self.cart.email or data["buyer-billing-address.email"]
         self.cart.phone = self.cart.phone or data["buyer-shipping-address.phone"]
         self.cart.ship_street1 = self.cart.ship_street1 or data["buyer-shipping-address.address1"]
