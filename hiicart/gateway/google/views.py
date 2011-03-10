@@ -3,7 +3,6 @@ import hashlib
 import hmac
 import httplib2
 import logging
-import re
 import xml.etree.cElementTree as ET
 
 from django.http import HttpResponse, HttpResponseBadRequest
@@ -37,10 +36,7 @@ def _find_cart(data):
         log.error("Could not find private data. Data: %s" % str(data.items()))
         return None # Not a HiiCart purchase ?
     # Find Purchase from private data
-    match = re.search(r'(hiicart|bursar)-purchase id="([0-9a-f-]+)"',  private_data)
-    if not match:
-        return
-    carts = HiiCart.objects.filter(_cart_uuid=match.group(2))
+    carts = HiiCart.objects.filter(_cart_uuid=private_data)
     return carts[0] if carts else None
 
 
