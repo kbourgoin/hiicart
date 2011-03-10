@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import httplib2
 import logging
+import re
 import xml.etree.cElementTree as ET
 
 from django.http import HttpResponse, HttpResponseBadRequest
