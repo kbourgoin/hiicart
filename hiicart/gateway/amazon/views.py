@@ -33,10 +33,10 @@ def cbui(request, settings=None):
     uses the provided authorization to initiate a Pay request.
     """
     log.debug("CBUI Received: \n%s" % pprint.pformat(dict(request.GET), indent=10))
-    handler = AmazonIPN()
     cart = _find_cart(request.GET)
-    handler._update_with_cart_settings(cart, cart_settings_kwargs={'request': request})
-    if not handler.verify_signature(request.GET.urlencode(), "GET", handler.settings["CBUI_RETURN_URL"], cart):
+    handler = AmazonIPN(cart)
+    handler._update_with_cart_settings(cart_settings_kwargs={'request': request})
+    if not handler.verify_signature(request.GET.urlencode(), "GET", handler.settings["CBUI_RETURN_URL"]):
         log.error("Validation of Amazon request failed!")
         return HttpResponseRedirect(handler.settings.get("ERROR_RETURN_URL",
                                     handler.settings.get("RETURN_URL", "/")))
@@ -63,15 +63,15 @@ def cbui(request, settings=None):
     cart.save()
     recurring = cart.recurring_lineitems
     if len(recurring) > 0:
-        handler.save_recurring_token(cart, request.GET["tokenID"])
+        handler.save_recurring_token(request.GET["tokenID"])
         if recurring[0].recurring_start is None:
-            result = handler.make_pay_request(cart, request.GET["tokenID"])
+            result = handler.make_pay_request(request.GET["tokenID"])
             if result == "Success":
-                handler.begin_recurring(cart)
+                handler.begin_recurring()
         else:
-            handler.begin_recurring(cart)
+            handler.begin_recurring()
     else:
-        result = handler.make_pay_request(cart, request.GET["tokenID"])
+        result = handler.make_pay_request(request.GET["tokenID"])
     if 'RETURN_URL' in handler.settings:
         return HttpResponseRedirect(handler.settings['RETURN_URL'])
     return HttpResponseRedirect("/")
@@ -82,17 +82,17 @@ def cbui(request, settings=None):
 def ipn(request):
     """Instant Payment Notification handler."""
     log.debug("IPN Received: \n%s" % pprint.pformat(dict(request.POST), indent=10))
-    handler = AmazonIPN()
     cart = _find_cart(request.POST)
-    handler._update_with_cart_settings(cart, cart_settings_kwargs={'request': request})
-    if not handler.verify_signature(request.POST.urlencode(), "POST", handler.settings["IPN_URL"], cart):
+    handler = AmazonIPN(cart)
+    handler._update_with_cart_settings(cart_settings_kwargs={'request': request})
+    if not handler.verify_signature(request.POST.urlencode(), "POST", handler.settings["IPN_URL"]):
         log.error("Validation of Amazon request failed!")
         return HttpResponseBadRequest("Validation of Amazon request failed!")
     if not cart:
         log.error("Unable to find HiiCart.")
         return HttpResponseBadRequest()
     if request.POST["notificationType"] == "TransactionStatus":
-        handler.accept_payment(cart, request.POST)
+        handler.accept_payment(request.POST)
     elif request.POST["notificationType"] == "TokenCancellation":
-        handler.end_recurring(cart, request.POST.get("tokenId", None))
+        handler.end_recurring(request.POST.get("tokenId", None))
     return HttpResponse()

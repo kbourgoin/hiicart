@@ -111,8 +111,7 @@ class AmazonGateway(PaymentGatewayBase):
                     .filter(state="PAID") \
                     .order_by("-created")
         payment_id= '%s-%i' % (self.cart.cart_uuid, len(payments)+1)
-        result = ipn.AmazonIPN().make_pay_request(self.cart, item.payment_token,
-                                                  payment_id)
+        result = ipn.AmazonIPN(self.cart).make_pay_request(item.payment_token, payment_id)
         if result != "TokenUsageError" and result != "Pending" and result != "Success":
             # TokenUsageError is if we tried to charge too soon
             item.recurring = False
@@ -124,7 +123,7 @@ class AmazonGateway(PaymentGatewayBase):
 
     def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit the cart to Amazon's Co-Branded UI (CBUI)"""
-        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
+        self._update_with_cart_settings(cart_settings_kwargs)
         values = self._get_cbui_values(collect_address)
         values["Signature"] = fps.generate_signature("GET", values,
                                                      self._cbui_base_url,

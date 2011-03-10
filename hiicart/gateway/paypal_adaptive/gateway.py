@@ -58,7 +58,7 @@ class PaypalAPGateway(PaymentGatewayBase):
 
     def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit the cart to the Paypal Adaptive Payments API"""
-        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
+        self._update_with_cart_settings(cart_settings_kwargs)
         if len(self.cart.recurring_lineitems) > 0:
             raise GatewayError("Adaptive Payments doesn't support recurring payments.")
         params = {"actionType": "PAY",

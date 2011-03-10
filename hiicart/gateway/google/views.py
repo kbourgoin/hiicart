@@ -16,6 +16,34 @@ from hiicart.utils import format_exceptions, call_func
 
 log = logging.getLogger("hiicart.gateway.google")
 
+
+def _find_cart(data):
+    """Find purchase using a google id, or other things"""
+    # If this is an existing order, then we'll find it in the db by transaction id
+    payment = GoogleIPN._find_payment(data)
+    if payment:
+        return payment.cart
+
+    # Otherwise, it's more complex, because we need to find the cart's uuid somewhere
+    private_data = None
+    if "shopping-cart.merchant-private-data" in data:
+        private_data = data["shopping-cart.merchant-private-data"]
+    else:
+        items = [x for x in data.keys() if x.endswith("merchant-private-item-data")]
+        if len(items) > 0:
+            private_data = data[items[0]]
+    if not private_data:
+        log.error("Could not find private data. Data: %s" % str(data.items()))
+        return None # Not a HiiCart purchase ?
+    # Find Purchase from private data
+    match = re.search(r'(hiicart|bursar)-purchase id="([0-9a-f-]+)"',  private_data)
+    if not match:
+        return
+    carts = HiiCart.objects.filter(_cart_uuid=match.group(2))
+    return carts[0] if carts else None
+
+
+
 @csrf_view_exempt
 @format_exceptions
 @never_cache
@@ -39,7 +67,8 @@ def ipn(request):
         return response
     # Handle the notification
     type = data["_type"]
-    handler = GoogleIPN()
+    cart = _find_cart(data)
+    handler = GoogleIPN(cart)
     if type == "new-order-notification":
         handler.new_order(data)
     elif type == "order-state-change-notification":
@@ -59,7 +88,7 @@ def ipn(request):
     else:
         raise GatewayError("google gateway: Unknown message type recieved: %s" % type)
     # Return ack so google knows we handled the message
-    ack = "<notification-acknowledgment xmlns='http://checkout.google.com/schema/2' serial-number='%s'/>" %  data["serial-number"].strip()
+    ack = "<notification-acknowledgment xmlns='http://checkout.google.com/schema/2' serial-number='%s'/>" % data["serial-number"].strip()
     response = HttpResponse(content=ack, content_type="text/xml; charset=UTF-8")
     log.debug("Google Checkout: Sending IPN Acknowledgement")
     return response

@@ -14,7 +14,7 @@ class _SharedBase(object):
     Created because they have significant overlapping functionality.
     """
 
-    def __init__(self, name, default_settings=None):
+    def __init__(self, name, cart, default_settings=None):
         """Initalize logger and settings.
 
         Duplicate settings are overwritten according to priority according to
@@ -28,32 +28,34 @@ class _SharedBase(object):
         if self.name in self.settings:
             self.settings.update(hiicart_settings[self.name])
         self._settings_base = self.settings.copy()
+        self.cart = cart
+        self._update_with_store_settings()
 
-    def _create_payment(self, cart, amount, transaction_id, state):
+    def _create_payment(self, amount, transaction_id, state):
         """Record a payment."""
-        pmnt = Payment(amount=amount, gateway=self.name, cart=cart,
+        pmnt = Payment(amount=amount, gateway=self.name,
                        state=state, transaction_id=transaction_id)
         pmnt.save()
         return pmnt
 
-    def _update_with_store_settings(self, cart):
+    def _update_with_store_settings(self):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
         if hiicart_settings["STORE_SETTINGS_FN"]:
-            s = call_func(hiicart_settings["STORE_SETTINGS_FN"], cart)
+            s = call_func(hiicart_settings["STORE_SETTINGS_FN"], self.cart)
             if s:
                 self.settings.update(s)
                 return
         self.settings = self._settings_base.copy() # reset to defaults
 
-    def _update_with_cart_settings(self, cart, cart_settings_kwargs):
+    def _update_with_cart_settings(self, cart_settings_kwargs):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
         if hiicart_settings["CART_SETTINGS_FN"]:
             cart_settings_kwargs = cart_settings_kwargs or {}
-            s = call_func(hiicart_settings["CART_SETTINGS_FN"], cart, **cart_settings_kwargs)
+            s = call_func(hiicart_settings["CART_SETTINGS_FN"], self.cart, **cart_settings_kwargs)
             if s:
                 self.settings.update(s)
                 return
@@ -96,9 +98,7 @@ class PaymentGatewayBase(_SharedBase):
     Provides a common interface for working with all payment gateways.
     """
     def __init__(self, name, cart, default_settings=None):
-        super(PaymentGatewayBase, self).__init__(name, default_settings)
-        self._update_with_store_settings(cart)
-        self.cart = cart
+        super(PaymentGatewayBase, self).__init__(name, cart, default_settings)
 
     def _is_valid(self):
         """Returns True if the gateway is set up properly.
@@ -106,11 +106,11 @@ class PaymentGatewayBase(_SharedBase):
         required settings from global definition."""
         raise NotImplementedError
 
-    def cancel_recurring(self, cart):
+    def cancel_recurring(self):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         raise NotImplementedError
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """
         Charge recurring purchases if necessary.
 

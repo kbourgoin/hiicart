@@ -14,13 +14,29 @@ from hiicart.utils import format_exceptions
 
 log = logging.getLogger("hiicart.gateway.paypal_adaptive")
 
+
 def _find_cart(data):
-    pass
+    # invoice may have a suffix due to retries
+    if 'invoice' in data:
+        invoice = data['invoice']
+    elif 'rp_invoice_id' in data:
+        invoice = data['invoice']
+    else:
+        invoice = data['item_number']
+    if not invoice:
+        log.warn("No invoice # in data, aborting IPN")
+        return None
+    try:
+        return HiiCart.objects.get(_cart_uuid=invoice[:36])
+    except HiiCart.DoesNotExist:
+        return None
+
 
 # TODO: Move all the functions from ipn.py here. There's no real reason
 #       for it to be in a separate file. It creates confusion when you
 #       have an api.py and ipn.py. The same should happen in the other
 #       gateways.
+
 
 @csrf_view_exempt
 @format_exceptions
@@ -36,7 +52,8 @@ def ipn(request):
     data = request.POST
     log.info("IPN Notification received from Paypal: %s" % data)
     # Verify the data with Paypal
-    ipn = Paypal2IPN()
+    cart = _find_cart(data)
+    ipn = Paypal2IPN(cart)
     if not ipn.confirm_ipn_data(request.raw_post_data):
         log.error("Paypal IPN Confirmation Failed.")
         raise GatewayError("Paypal IPN Confirmation Failed.")
@@ -62,7 +79,9 @@ def ipn(request):
 def authorized(request):
     if "token" not in request.GET:
         raise Http404
-    ipn = Paypal2IPN()
+    # I don't know if this actually works
+    cart = _find_cart(request.GET)
+    ipn = Paypal2IPN(cart)
     info = api.get_express_details(request.GET["token"], ipn.settings)
     params = request.GET.copy()
     params["cart"] = info["INVNUM"]
@@ -77,7 +96,7 @@ def do_pay(request):
         or "cart" not in request.POST:
             raise GatewayError("Incorrect values POSTed to do_buy")
     cart = HiiCart.objects.get(_cart_uuid=request.POST["cart"])
-    ipn = Paypal2IPN()
+    ipn = Paypal2IPN(cart)
     if len(cart.one_time_lineitems) > 0:
         api.do_express_payment(request.POST["token"], request.POST["PayerID"],
                                cart, ipn.settings)

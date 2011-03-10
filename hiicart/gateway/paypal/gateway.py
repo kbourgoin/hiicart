@@ -225,7 +225,7 @@ class PaypalGateway(PaymentGatewayBase):
 
     def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to the gateway. Returns a SubmitResult."""
-        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
+        self._update_with_cart_settings(cart_settings_kwargs)
         data = self._get_form_data()
         if self.settings["ENCRYPT"]:
             data = {"encrypted": self._encrypt_data(data)}

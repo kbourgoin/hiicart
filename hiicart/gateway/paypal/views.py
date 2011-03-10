@@ -13,13 +13,26 @@ from hiicart.utils import format_exceptions
 
 log = logging.getLogger("hiicart.gateway.paypal")
 
+
+def _find_cart(data):
+    # invoice may have a suffix due to retries
+    invoice = data["invoice"] if "invoice" in data else data["item_number"]
+    if not invoice:
+        log.warn("No invoice # in data, aborting IPN")
+        return None
+    try:
+        return HiiCart.objects.get(_cart_uuid=invoice[:36])
+    except HiiCart.DoesNotExist:
+        return None
+
+
 @csrf_view_exempt
 @format_exceptions
 @never_cache
 def ipn(request):
     """
     PayPal IPN (Instant Payment Notification)
-    
+
     Confirms that payment has been completed and marks invoice as paid.
     Adapted from IPN cgi script provided at:
     http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/456361
@@ -29,7 +42,8 @@ def ipn(request):
     data = request.POST
     log.info("IPN Notification received from Paypal: %s" % data)
     # Verify the data with Paypal
-    handler = PaypalIPN()
+    cart = _find_cart(data)
+    handler = PaypalIPN(cart)
     if not handler.confirm_ipn_data(request.raw_post_data):
         log.error("Paypal IPN Confirmation Failed.")
         raise GatewayError("Paypal IPN Confirmation Failed.")
@@ -42,6 +56,6 @@ def ipn(request):
     elif status == "Completed":
         handler.accept_payment(data)
     else:
-        log.info("Unknown IPN type or status. Type: %s\tStatus: %s" % 
+        log.info("Unknown IPN type or status. Type: %s\tStatus: %s" %
                  (status, txn_type))
     return HttpResponse()

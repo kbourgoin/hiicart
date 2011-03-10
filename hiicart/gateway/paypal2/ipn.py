@@ -20,19 +20,8 @@ from hiicart.models import HiiCart, Payment
 class Paypal2IPN(IPNBase):
     """Payment Gateway for Paypal Website Payments Pro."""
 
-    def __init__(self):
-        super(Paypal2IPN, self).__init__("paypal2", default_settings)
-
-    def _find_cart(self, data, uuid_key="invoice"):
-        # invoice may have a suffix due to retries
-        invoice = data[uuid_key] if uuid_key in data else data["item_number"]
-        if not invoice:
-            self.log.warn("No invoice # in data, aborting IPN")
-            return None
-        try:
-            return HiiCart.objects.get(_cart_uuid=invoice[:36])
-        except HiiCart.DoesNotExist:
-            return None
+    def __init__(self, cart):
+        super(Paypal2IPN, self).__init__("paypal2", cart, default_settings)
 
     def accept_payment(self, data):
         """Accept a PayPal payment IPN."""
@@ -42,21 +31,19 @@ class Paypal2IPN(IPNBase):
         if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
-        cart = self._find_cart(data)
-        if not cart:
+        if not self.cart:
             self.log.warn("Unable to find purchase for IPN.")
             return
-        payment = self._create_payment(cart, data["mc_gross_1"],
-                                       transaction_id, "PENDING")
+        payment = self._create_payment(data["mc_gross_1"], transaction_id, "PENDING")
         payment.state = "PAID" # Ensure proper state transitions
         payment.save()
         if data.get("note", False):
             payment.notes.create(text="Comment via IPN: \n%s" % data["note"])
-        cart.email = cart.email or data.get("payer_email", "")
-        cart.first_name = cart.first_name or data.get("first_name", "")
-        cart.last_name = cart.last_name or data.get("last_name", "")
-        cart.update_state()
-        cart.save()
+        self.cart.email = self.cart.email or data.get("payer_email", "")
+        self.cart.first_name = self.cart.first_name or data.get("first_name", "")
+        self.cart.last_name = self.cart.last_name or data.get("last_name", "")
+        self.cart.update_state()
+        self.cart.save()
 
     def accept_recurring_payment(self, data):
         transaction_id = data["txn_id"]
@@ -64,18 +51,16 @@ class Paypal2IPN(IPNBase):
         if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
-        cart = self._find_cart(data, "rp_invoice_id")
-        if not cart:
+        if not self.cart:
             self.log.warn("Unable to find purchase for IPN.")
             return
-        payment = self._create_payment(cart, data["mc_gross"],
-                                       transaction_id, "PENDING")
+        payment = self._create_payment(data["mc_gross"], transaction_id, "PENDING")
         payment.state = "PAID" # Ensure proper state transitions
         payment.save()
         if data.get("note", False):
             payment.notes.create(text="Comment via IPN: \n%s" % data["note"])
-        cart.update_state()
-        cart.save()
+        self.cart.update_state()
+        self.cart.save()
 
     def confirm_ipn_data(self, raw_data):
         """Confirm IPN data using string raw post data.
@@ -97,8 +82,7 @@ class Paypal2IPN(IPNBase):
         """Notification that a recurring profile was cancelled."""
         # TODO: Support more than one profile in a cart
         #       Can ri.payment_token be used to id the profile?
-        cart = self._find_cart(data, "rp_invoice_id")
-        ri = cart.recurring_lineitems[0]
+        ri = self.cart.recurring_lineitems[0]
         ri.is_active = True
         ri.save()
 
@@ -106,8 +90,7 @@ class Paypal2IPN(IPNBase):
         """Notification that a recurring profile was created."""
         # TODO: Support more than one profile in a cart
         #       Can ri.payment_token be used to id the profile?
-        cart = self._find_cart(data, "rp_invoice_id")
-        ri = cart.recurring_lineitems[0]
+        ri = self.cart.recurring_lineitems[0]
         ri.is_active = True
         ri.save()
 

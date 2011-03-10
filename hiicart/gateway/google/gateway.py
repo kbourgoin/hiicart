@@ -87,7 +87,7 @@ class GoogleGateway(PaymentGatewayBase):
           * Post the xml to Checkout, using HTTP Basic Auth
           * Checkout returns a url to redirect the user to"""
         # Construct cart xml
-        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
+        self._update_with_cart_settings(cart_settings_kwargs)
         template = loader.get_template("gateway/google/cart.xml")
         ctx = Context({"cart" : self.cart,
                        "continue_shopping_url" : self.settings.get("SHOPPING_URL", None),

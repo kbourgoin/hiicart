@@ -31,7 +31,7 @@ class CompGateway(PaymentGatewayBase):
         a mismatch between when an account can be charged.
         """
         if any([r.is_expired(grace_period) and r.is_active for r in self.cart.recurring_lineitems]):
-            payment = self._create_payment(self.cart, self.cart.total, None, "PAID")
+            payment = self._create_payment(self.cart.total, None, "PAID")
             payment.save()
 
     def sanitize_clone(self):
@@ -40,8 +40,8 @@ class CompGateway(PaymentGatewayBase):
 
     def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit cart. Returns None because comp is instantaneous."""
-        self._update_with_cart_settings(self.cart, cart_settings_kwargs)
-        payment = self._create_payment(self.cart, self.cart.total, None, "PAID")
+        self._update_with_cart_settings(cart_settings_kwargs)
+        payment = self._create_payment(self.cart.total, None, "PAID")
         if self.settings.get("ALLOW_RECURRING_COMP", False):
             for ri in self.cart.recurring_lineitems:
                 ri.is_active = True
