@@ -13,11 +13,6 @@
           <quantity>{{ lineitem.quantity }}</quantity>
 	        <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
   	      <unit-price currency="{{ currency }}">{{ lineitem.unit_price|floatformat:2 }}</unit-price>
-          {% if lineitem.thankyou %}
-	        <digital-content>
-	          <description>{{ lineitem.thankyou }}</description>
-	        </digital-content>
-          {% endif %}
         </item>
       {% endfor %}
       {% for lineitem in cart.recurring_lineitems %}
@@ -53,9 +48,9 @@
         </item>
       {% endfor %}
     </items>
-    {% if lineitem.thankyou %}
+    {% if cart.thankyou %}
     <buyer-messages>
-      <buyer-note>{{ lineitem.thankyou }}</buyer-note>
+      <buyer-note>{{ cart.thankyou }}</buyer-note>
     </buyer-messages>
     {% endif %}
   </shopping-cart>
