@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.google.settings import SETTINGS as default_settings
-from hiicart.models import HiiCart, Payment
+from hiicart.models import Payment
 
 class GoogleIPN(IPNBase):
     """Google Checkout IPN Handler."""
