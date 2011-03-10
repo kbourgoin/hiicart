@@ -33,7 +33,7 @@ class _SharedBase(object):
 
     def _create_payment(self, amount, transaction_id, state):
         """Record a payment."""
-        pmnt = Payment(amount=amount, gateway=self.name,
+        pmnt = Payment(amount=amount, gateway=self.name, cart=self.cart,
                        state=state, transaction_id=transaction_id)
         pmnt.save()
         return pmnt
