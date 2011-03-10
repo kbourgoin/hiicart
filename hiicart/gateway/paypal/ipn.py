@@ -44,9 +44,9 @@ class PaypalIPN(IPNBase):
         if data.get("note", False):
             payment.notes.create(text="Comment via Paypal IPN: \n%s" % data["note"])
         # Fill in billing information. Consider any already in HiiCart correct
-        self.cart.email = self.cart.email or data.get("payer_email", "")
-        self.cart.first_name = self.cart.first_name or data.get("first_name", "")
-        self.cart.last_name = self.cart.last_name or data.get("last_name", "")
+        self.cart.bill_email = self.cart.bill_email or data.get("payer_email", "")
+        self.cart.bill_first_name = self.cart.bill_first_name or data.get("first_name", "")
+        self.cart.bill_last_name = self.cart.bill_last_name or data.get("last_name", "")
         street = data.get("address_street", "")
         self.cart.bill_street1 = self.cart.bill_street1 or street.split("\r\n")[0]
         if street.count("\r\n") > 0:

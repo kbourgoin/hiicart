@@ -39,9 +39,9 @@ class Paypal2IPN(IPNBase):
         payment.save()
         if data.get("note", False):
             payment.notes.create(text="Comment via IPN: \n%s" % data["note"])
-        self.cart.email = self.cart.email or data.get("payer_email", "")
-        self.cart.first_name = self.cart.first_name or data.get("first_name", "")
-        self.cart.last_name = self.cart.last_name or data.get("last_name", "")
+        self.cart.bill_email = self.cart.bill_email or data.get("payer_email", "")
+        self.cart.bill_first_name = self.cart.bill_first_name or data.get("first_name", "")
+        self.cart.bill_last_name = self.cart.bill_last_name or data.get("last_name", "")
         self.cart.update_state()
         self.cart.save()
 

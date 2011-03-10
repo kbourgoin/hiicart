@@ -188,14 +188,14 @@ class PaypalGateway(PaymentGatewayBase):
                 submit["os0_%i" % ix] = item.sku
                 ix += 1
         if self.cart.bill_street1:
-            submit["first_name"] = self.cart.first_name
-            submit["last_name"] = self.cart.last_name
+            submit["first_name"] = self.cart.bill_first_name
+            submit["last_name"] = self.cart.bill_last_name
             submit["address1"] = self.cart.bill_street1
             submit["address2"] = self.cart.bill_street2
             submit["city"] = self.cart.bill_city
             submit["country"] = self.cart.bill_country
             submit["zip"] = self.cart.bill_postal_code
-            submit["email"] = self.cart.email
+            submit["email"] = self.cart.bill_email
             submit["address_override"] = "0"
             # only U.S. abbreviations may be used here
             if self.cart.bill_country.lower() == "us" and len(self.cart.bill_state) == 2:

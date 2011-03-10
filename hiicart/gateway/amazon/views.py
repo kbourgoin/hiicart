@@ -50,9 +50,9 @@ def cbui(request, settings=None):
                                     handler.settings.get("RETURN_URL", "/")))
     # Address collection. Any data already in cart is assumed correct
     name = request.GET.get("addressName", "").split(" ")
-    cart.first_name = cart.first_name or name[0]
+    cart.ship_first_name = cart.ship_first_name or name[0]
     if len(name) > 1:
-        cart.last_name = cart.last_name or name[1]
+        cart.ship_last_name = cart.ship_last_name or name[1]
     cart.bill_street1 = cart.bill_street1 or request.GET.get("addressLine1", "")
     cart.bill_street2 = cart.bill_street1 or request.GET.get("addressLine2", "")
     cart.bill_state = cart.bill_state or request.GET.get("state", "")
