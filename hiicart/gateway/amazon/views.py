@@ -62,7 +62,7 @@ def cbui(request, settings=None):
     country = request.GET.get("country", "").upper()
     cart.bill_country = cart.bill_country or COUNTRIES.get(country, "")
     cart.ship_country = cart.ship_country or cart.bill_country
-    cart.bill_email = cart.bill_email = request.GET.get("buyerEmailAddress");
+    cart.bill_email = cart.bill_email = request.GET.get("buyerEmailAddress", "");
     cart.ship_email = cart.ship_email or cart.bill_email
     cart.save()
     recurring = cart.recurring_lineitems
