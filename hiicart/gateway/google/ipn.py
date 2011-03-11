@@ -103,9 +103,21 @@ class GoogleIPN(IPNBase):
         if not payment:
             return
         # Save buyer information if not already there
-        self.cart.ship_first_name = self.cart.ship_first_name or data.get("buyer-billing-address.structured-name.first-name")
-        self.cart.ship_last_name = self.cart.ship_last_name or data.get("buyer-billing-address.structured-name.last-name")
-        self.cart.ship_email = self.cart.ship_email or data["buyer-billing-address.email"]
+        if data.get("buyer-shipping-address.structured-name.first-name"):
+            self.cart.ship_first_name = self.cart.ship_first_name or data['buyer-shipping-address.structured-name.first-name']
+        else:
+            self.cart.ship_first_name = self.cart.ship_first_name or data['buyer-shipping-address.contact-name']
+        if data.get("buyer-shipping-address.structured-name.last-name"):
+            self.cart.ship_last_name = self.cart.ship_last_name or data['buyer-shipping-address.structured-name.last-name']
+
+        if data.get("buyer-billing-address.structured-name.first-name"):
+            self.cart.bill_first_name = self.cart.bill_first_name or data['buyer-billing-address.structured-name.first-name']
+        else:
+            self.cart.bill_first_name = self.cart.bill_first_name or data['buyer-billing-address.contact-name']
+        if data.get("buyer-billing-address.structured-name.last-name"):
+            self.cart.bill_last_name = self.cart.bill_last_name or data['buyer-billing-address.structured-name.last-name']
+
+        self.cart.ship_email = self.cart.ship_email or data["buyer-shipping-address.email"]
         self.cart.ship_phone = self.cart.ship_phone or data["buyer-shipping-address.phone"]
         self.cart.ship_street1 = self.cart.ship_street1 or data["buyer-shipping-address.address1"]
         self.cart.ship_street2 = self.cart.ship_street2 or data["buyer-shipping-address.address2"]
@@ -113,10 +125,8 @@ class GoogleIPN(IPNBase):
         self.cart.ship_state = self.cart.ship_state or data["buyer-shipping-address.region"]
         self.cart.ship_postal_code = self.cart.ship_postal_code or data["buyer-shipping-address.postal-code"]
         self.cart.ship_country = self.cart.ship_country or data["buyer-shipping-address.country-code"]
-        self.cart.bill_first_name = self.cart.bill_first_name or data.get("buyer-billing-address.structured-name.first-name")
-        self.cart.bill_last_name = self.cart.bill_last_name or data.get("buyer-billing-address.structured-name.last-name")
         self.cart.bill_email = self.cart.bill_email or data["buyer-billing-address.email"]
-        self.cart.bill_phone = self.cart.bill_phone or data["buyer-shipping-address.phone"]
+        self.cart.bill_phone = self.cart.bill_phone or data["buyer-billing-address.phone"]
         self.cart.bill_street1 = self.cart.bill_street1 or data["buyer-billing-address.address1"]
         self.cart.bill_street2 = self.cart.bill_street2 or data["buyer-billing-address.address2"]
         self.cart.bill_city = self.cart.bill_city or data["buyer-billing-address.city"]

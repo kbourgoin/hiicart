@@ -81,16 +81,25 @@ class PaypalAPIPN(IPNBase):
             payment.notes.create(text="Comment via IPN: \n%s" % data["note"])
         # Fill in billing information. Consider any already in HiiCart correct
         self.cart.bill_email = self.cart.bill_email or data.get("payer_email", "")
+        self.cart.ship_email = self.cart.ship_email or self.cart.bill_email
         self.cart.bill_first_name = self.cart.bill_first_name or data.get("first_name", "")
+        self.cart.ship_first_name = self.cart.ship_first_name or self.cart.bill_first_name
         self.cart.bill_last_name = self.cart.bill_last_name or data.get("last_name", "")
+        self.cart.ship_last_name = self.cart.ship_last_name or self.cart.bill_last_name
         street = data.get("address_street", "")
         self.cart.bill_street1 = self.cart.bill_street1 or street.split("\r\n")[0]
+        self.cart.ship_street1 = self.cart.ship_street1 or self.cart.bill_street1
         if street.count("\r\n") > 0:
             self.cart.bill_street2 = self.cart.bill_street2 or street.split("\r\n")[1]
+            self.cart.ship_street2 = self.cart.ship_street2 or self.cart.bill_street2
         self.cart.bill_city = self.cart.bill_city or data.get("address_city", "")
+        self.cart.ship_city = self.cart.ship_city or self.cart.bill_city
         self.cart.bill_state = self.cart.bill_state or data.get("address_state", "")
+        self.cart.ship_state = self.cart.ship_state or self.cart.bill_state
         self.cart.bill_postal_code = self.cart.bill_postal_code or data.get("address_zip", "")
+        self.cart.ship_postal_code = self.cart.ship_postal_code or self.cart.bill_postal_code
         self.cart.bill_country = self.cart.bill_country or data.get("address_country_code", "")
+        self.cart.ship_country = self.cart.ship_country or self.cart.bill_country
         self.cart.update_state()
         self.cart.save()
 

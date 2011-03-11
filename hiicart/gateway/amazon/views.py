@@ -49,17 +49,21 @@ def cbui(request, settings=None):
         return HttpResponseRedirect(handler.settings.get("ERROR_RETURN_URL",
                                     handler.settings.get("RETURN_URL", "/")))
     # Address collection. Any data already in cart is assumed correct
-    name = request.GET.get("addressName", "").split(" ")
-    cart.ship_first_name = cart.ship_first_name or name[0]
-    if len(name) > 1:
-        cart.ship_last_name = cart.ship_last_name or name[1]
+    cart.bill_first_name = cart.bill_first_name or request.GET.get("billingName", "")
+    cart.ship_first_name = cart.ship_first_name or request.GET.get("addressName", "")
     cart.bill_street1 = cart.bill_street1 or request.GET.get("addressLine1", "")
+    cart.ship_street1 = cart.ship_street1 or cart.bill_street1
     cart.bill_street2 = cart.bill_street1 or request.GET.get("addressLine2", "")
+    cart.ship_street2 = cart.ship_street1 or cart.bill_street1
     cart.bill_state = cart.bill_state or request.GET.get("state", "")
+    cart.ship_state = cart.ship_state or cart.bill_state
     cart.bill_postal_code = cart.bill_postal_code or request.GET.get("zip", "")
+    cart.ship_postal_code = cart.ship_postal_code or cart.bill_postal_code
     country = request.GET.get("country", "").upper()
-    if not cart.bill_country and country in COUNTRIES.values():
-        cart.bill_country = [k for k,v in COUNTRIES.iteritems() if v == country][0]
+    cart.bill_country = cart.bill_country or COUNTRIES.get(country, "")
+    cart.ship_country = cart.ship_country or cart.bill_country
+    cart.bill_email = cart.bill_email = request.GET.get("buyerEmailAddress");
+    cart.ship_email = cart.ship_email or cart.bill_email
     cart.save()
     recurring = cart.recurring_lineitems
     if len(recurring) > 0:
