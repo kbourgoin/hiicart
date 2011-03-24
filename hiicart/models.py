@@ -11,7 +11,6 @@ from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.db.models.fields import DecimalField
 from django.utils.safestring import mark_safe
 from hiicart.settings import SETTINGS as hiicart_settings
 from logging.handlers import RotatingFileHandler
@@ -113,16 +112,16 @@ class HiiCart(models.Model):
     success_url = models.URLField(null=True)
     # Total fields
     # sub_total and total are '_' so we can recalculate them on the fly
-    _sub_total = DecimalField("Subtotal", max_digits=18, decimal_places=2, blank=True, null=True)
-    _total = DecimalField("Total", max_digits=18, decimal_places=2)
-    tax = DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
-    tax_rate = DecimalField("Tax", max_digits=6, decimal_places=5, blank=True, null=True)
-    shipping = DecimalField("Shipping Cost", max_digits=18, decimal_places=2, blank=True, null=True)
+    _sub_total = models.DecimalField("Subtotal", max_digits=18, decimal_places=2, blank=True, null=True)
+    _total = models.DecimalField("Total", max_digits=18, decimal_places=2)
+    tax = models.DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
+    tax_rate = models.DecimalField("Tax", max_digits=6, decimal_places=5, blank=True, null=True)
+    shipping = models.DecimalField("Shipping Cost", max_digits=18, decimal_places=2, blank=True, null=True)
     shipping_option_name = models.CharField(max_length=50, blank=True, null=True)
     # Customer Info
-    ship_first_name = models.CharField("First name", max_length=30, default="")
-    ship_last_name = models.CharField("Last name", max_length=30, default="")
-    ship_email = models.EmailField("Email", max_length=75, default="")
+    ship_first_name = models.CharField("First name", max_length=255, default="")
+    ship_last_name = models.CharField("Last name", max_length=255, default="")
+    ship_email = models.EmailField("Email", max_length=255, default="")
     ship_phone = models.CharField("Phone Number", max_length=30, default="")
     ship_street1 = models.CharField("Street", max_length=80, default="")
     ship_street2 = models.CharField("Street 2", max_length=80, default="")
@@ -130,9 +129,9 @@ class HiiCart(models.Model):
     ship_state = models.CharField("State", max_length=50, default="")
     ship_postal_code = models.CharField("Zip Code", max_length=30, default="")
     ship_country = models.CharField("Country", max_length=2, default="")
-    bill_first_name = models.CharField("First name", max_length=30, default="")
-    bill_last_name = models.CharField("Last name", max_length=30, default="")
-    bill_email = models.EmailField("Email", max_length=75, default="")
+    bill_first_name = models.CharField("First name", max_length=255, default="")
+    bill_last_name = models.CharField("Last name", max_length=255, default="")
+    bill_email = models.EmailField("Email", max_length=255, default="")
     bill_phone = models.CharField("Phone Number", max_length=30, default="")
     bill_street1 = models.CharField("Street", max_length=80, default="")
     bill_street2 = models.CharField("Street", max_length=80, default="")
@@ -397,11 +396,11 @@ class LineItemBase(models.Model):
     through the base class.
     http://stackoverflow.com/questions/313054/django-admin-interface-does-not-use-subclasss-unicode
     """
-    _sub_total = DecimalField("Sub total", max_digits=18, decimal_places=10)
-    _total = DecimalField("Total", max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    _sub_total = models.DecimalField("Sub total", max_digits=18, decimal_places=10)
+    _total = models.DecimalField("Total", max_digits=18, decimal_places=2, default=Decimal("0.00"))
     cart = models.ForeignKey(HiiCart, verbose_name="Cart")
     description = models.TextField("Description", blank=True)
-    discount = DecimalField("Item discount", max_digits=18, decimal_places=10, default=Decimal("0.00"))
+    discount = models.DecimalField("Item discount", max_digits=18, decimal_places=10, default=Decimal("0.00"))
     name = models.CharField("Item", max_length=100)
     notes = generic.GenericRelation("Note")
     ordering = models.PositiveIntegerField("Ordering", default=0)
@@ -447,7 +446,7 @@ class LineItemBase(models.Model):
 class OneTimeLineItemBase(LineItemBase):
     """Base class for line items that do not recur, for external apps to inherit"""
 
-    unit_price = DecimalField("Unit price", max_digits=18, decimal_places=10)
+    unit_price = models.DecimalField("Unit price", max_digits=18, decimal_places=10)
 
     class Meta:
         abstract = True
@@ -481,7 +480,7 @@ class Note(models.Model):
 
 
 class Payment(models.Model):
-    amount = DecimalField("amount", max_digits=18, decimal_places=2)
+    amount = models.DecimalField("amount", max_digits=18, decimal_places=2)
     cart = models.ForeignKey(HiiCart, related_name="payments")
     gateway = models.CharField("Payment Gateway", max_length=25, blank=True)
     notes = generic.GenericRelation("Note")
@@ -523,12 +522,12 @@ class RecurringLineItemBase(LineItemBase):
     duration_unit = models.CharField("Duration Unit", max_length=5, choices=SUBSCRIPTION_UNITS, default="DAY", null=False)
     is_active = models.BooleanField("Is Currently Subscribed", default=False, db_index=True)
     payment_token = models.CharField("Recurring Payment Token", max_length=256, null=True)
-    recurring_price = DecimalField("Recurring Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
-    recurring_shipping = DecimalField("Recurring Shipping Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
+    recurring_price = models.DecimalField("Recurring Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
+    recurring_shipping = models.DecimalField("Recurring Shipping Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
     recurring_times = models.PositiveIntegerField("Recurring Times", help_text="Number of payments which will occur at the regular rate.  (optional)", default=0)
     recurring_start = models.DateTimeField(null=True, blank=True) # Allows delayed start to subscription.
     trial = models.BooleanField("Trial?", default=False)
-    trial_price = DecimalField("Trial Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
+    trial_price = models.DecimalField("Trial Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
     trial_length = models.PositiveIntegerField("Trial length", default=0)
     trial_times = models.PositiveIntegerField("Trial Times", help_text="Number of trial cycles", default=1)
 
