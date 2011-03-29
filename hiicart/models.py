@@ -75,12 +75,6 @@ class HiiCartError(Exception):
 
 ### Models
 
-# Stop CASCADE ON DELETE with User, but keep compatibility with django < 1.3
-if django.VERSION[1] >= 3 and hiicart_settings["KEEP_ON_USER_DELETE"]:
-    _user_delete_behavior = models.SET_NULL
-else:
-    _user_delete_behavior = None
-
 class HiiCartBase(models.Model):
     """
     Collects information about an order and tracks its state.
@@ -101,10 +95,6 @@ class HiiCartBase(models.Model):
     _cart_uuid = models.CharField(max_length=36,db_index=True)
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
-    if _user_delete_behavior is not None:
-        user = models.ForeignKey(User, on_delete=_user_delete_behavior, null=True, blank=True)
-    else:
-        user = models.ForeignKey(User, null=True, blank=True)
     # Redirection targets after purchase completes
     failure_url = models.URLField(null=True)
     success_url = models.URLField(null=True)
@@ -148,6 +138,7 @@ class HiiCartBase(models.Model):
         """Override in order to keep track of changes to state."""
         super(HiiCartBase, self).__init__(*args, **kwargs)
         self._old_state = self.state
+        self.hiicart_settings = hiicart_settings
 
     def __unicode__(self):
         if self.id:
@@ -226,7 +217,7 @@ class HiiCartBase(models.Model):
         * Dev only because it doesn't actually change when Google or PP
           will bill the subscription next.
         """
-        if hiicart_settings["LIVE"]:
+        if self.hiicart_settings["LIVE"]:
             raise HiiCartError("Development only functionality.")
         if self.state != "PENDCANCEL" and self.state != "RECURRING":
             return
@@ -385,8 +376,18 @@ class HiiCartBase(models.Model):
             self.save()
 
 
+# Stop CASCADE ON DELETE with User, but keep compatibility with django < 1.3
+if django.VERSION[1] >= 3 and hiicart_settings["KEEP_ON_USER_DELETE"]:
+    _user_delete_behavior = models.SET_NULL
+else:
+    _user_delete_behavior = None
+
+
 class HiiCart(HiiCartBase):
-    pass
+    if _user_delete_behavior is not None:
+        user = models.ForeignKey(User, on_delete=_user_delete_behavior, null=True, blank=True)
+    else:
+        user = models.ForeignKey(User, null=True, blank=True)
 
 
 class LineItemBase(models.Model):
@@ -491,6 +492,10 @@ class RecurringLineItemBase(LineItemBase):
     class Meta:
         abstract = True
 
+    def __init__(self, *args, **kwargs):
+        self.hiicart_settings = hiicart_settings
+        super(RecurringLineItemBase, self).__init__(*args, **kwargs)
+
     @property
     def sub_total(self):
         """Subtotal, calculated as price * quantity."""
@@ -523,8 +528,8 @@ class RecurringLineItemBase(LineItemBase):
         """Get subscription expiration based on last payment optionally providing a grace period."""
         if grace_period:
             return datetime.now() > self.get_expiration() + grace_period
-        elif hiicart_settings["EXPIRATION_GRACE_PERIOD"]:
-            return datetime.now() > self.get_expiration() + hiicart_settings["EXPIRATION_GRACE_PERIOD"]
+        elif self.hiicart_settings["EXPIRATION_GRACE_PERIOD"]:
+            return datetime.now() > self.get_expiration() + self.hiicart_settings["EXPIRATION_GRACE_PERIOD"]
 
 
 @HiiCart.register_lineitem_type(recurring=True)
