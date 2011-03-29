@@ -81,7 +81,7 @@ if django.VERSION[1] >= 3 and hiicart_settings["KEEP_ON_USER_DELETE"]:
 else:
     _user_delete_behavior = None
 
-class HiiCart(models.Model):
+class HiiCartBase(models.Model):
     """
     Collects information about an order and tracks its state.
 
@@ -102,9 +102,9 @@ class HiiCart(models.Model):
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
     if _user_delete_behavior is not None:
-        user = models.ForeignKey(User, related_name="hiicarts", on_delete=_user_delete_behavior, null=True, blank=True)
+        user = models.ForeignKey(User, on_delete=_user_delete_behavior, null=True, blank=True)
     else:
-        user = models.ForeignKey(User, related_name="hiicarts", null=True, blank=True)
+        user = models.ForeignKey(User, null=True, blank=True)
     # Redirection targets after purchase completes
     failure_url = models.URLField(null=True)
     success_url = models.URLField(null=True)
@@ -140,6 +140,9 @@ class HiiCart(models.Model):
     thankyou = models.CharField("Thank you message.", max_length=255, blank=True, null=True, default=None)
     created = models.DateTimeField("Created", auto_now_add=True)
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
+
+    class Meta:
+        abstract = True
 
     def __init__(self, *args, **kwargs):
         """Override in order to keep track of changes to state."""
@@ -382,6 +385,10 @@ class HiiCart(models.Model):
             self.save()
 
 
+class HiiCart(HiiCartBase):
+    pass
+
+
 class LineItemBase(models.Model):
     """
     Abstract Base Class for a single line item in a purchase.
@@ -477,9 +484,8 @@ class Note(models.Model):
         return self.text
 
 
-class Payment(models.Model):
+class PaymentBase(models.Model):
     amount = models.DecimalField("amount", max_digits=18, decimal_places=2)
-    cart = models.ForeignKey(HiiCart, related_name="payments")
     gateway = models.CharField("Payment Gateway", max_length=25, blank=True)
     notes = generic.GenericRelation("Note")
     state = models.CharField(max_length=16, choices=PAYMENT_STATES)
@@ -488,6 +494,7 @@ class Payment(models.Model):
     transaction_id = models.CharField("Transaction ID", max_length=45, db_index=True, blank=True, null=True)
 
     class Meta:
+        abstract = True
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
 
@@ -511,6 +518,10 @@ class Payment(models.Model):
                                             old_state=self._old_state,
                                             new_state=self.state)
             self._old_state = self.state
+
+
+class Payment(PaymentBase):
+    cart = models.ForeignKey(HiiCart, related_name="payments")
 
 
 class RecurringLineItemBase(LineItemBase):
