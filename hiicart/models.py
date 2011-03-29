@@ -146,7 +146,7 @@ class HiiCartBase(models.Model):
 
     def __init__(self, *args, **kwargs):
         """Override in order to keep track of changes to state."""
-        super(HiiCart, self).__init__(*args, **kwargs)
+        super(HiiCartBase, self).__init__(*args, **kwargs)
         self._old_state = self.state
 
     def __unicode__(self):
@@ -331,7 +331,7 @@ class HiiCartBase(models.Model):
         self._recalc()
         if not self._cart_uuid:
             self._cart_uuid = str(uuid.uuid4())
-        super(HiiCart, self).save(*args, **kwargs)
+        super(HiiCartBase, self).save(*args, **kwargs)
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
             self.cart_state_changed.send(sender=self.__class__.__name__, cart=self,
