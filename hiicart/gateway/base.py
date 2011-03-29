@@ -2,7 +2,6 @@ import logging
 import os
 
 from hiicart.models import Payment
-from hiicart.settings import SETTINGS as hiicart_settings
 from hiicart.utils import call_func
 
 class GatewayError(Exception):
@@ -24,9 +23,9 @@ class _SharedBase(object):
         self.name = name.upper()
         self.log = logging.getLogger("hiicart.gateway." + self.name)
         self.settings = default_settings or {}
-        self.settings.update(hiicart_settings)
+        self.settings.update(cart.hiicart_settings)
         if self.name in self.settings:
-            self.settings.update(hiicart_settings[self.name])
+            self.settings.update(cart.hiicart_settings[self.name])
         self._settings_base = self.settings.copy()
         self.cart = cart
         self._update_with_store_settings()
@@ -42,8 +41,8 @@ class _SharedBase(object):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
-        if hiicart_settings["STORE_SETTINGS_FN"]:
-            s = call_func(hiicart_settings["STORE_SETTINGS_FN"], self.cart)
+        if self.cart.hiicart_settings.get("STORE_SETTINGS_FN"):
+            s = call_func(self.cart.hiicart_settings["STORE_SETTINGS_FN"], self.cart)
             if s:
                 self.settings.update(s)
                 return
@@ -53,9 +52,9 @@ class _SharedBase(object):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
-        if hiicart_settings["CART_SETTINGS_FN"]:
+        if self.cart.hiicart_settings.get("CART_SETTINGS_FN"):
             cart_settings_kwargs = cart_settings_kwargs or {}
-            s = call_func(hiicart_settings["CART_SETTINGS_FN"], self.cart, **cart_settings_kwargs)
+            s = call_func(self.cart.hiicart_settings["CART_SETTINGS_FN"], self.cart, **cart_settings_kwargs)
             if s:
                 self.settings.update(s)
                 return
