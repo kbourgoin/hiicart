@@ -16,9 +16,8 @@ class GoogleIPN(IPNBase):
     def _find_payment(data):
         """Find a payment based on the google id"""
         transaction_id = data["google-order-number"]
-        payments = Payment.objects.filter(transaction_id=transaction_id)
+        payments = Payment.objects.select_related('cart').filter(transaction_id=transaction_id)
         return payments[0] if payments else None
-
 
     def _record_payment(self, data, amount=None, state="PAID"):
         """Record a payment from the IPN data."""

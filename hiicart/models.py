@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal
-from django import dispatch
+from django.dispatch import Signal
 from django.contrib.auth.models import User
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
@@ -66,13 +66,6 @@ VALID_TRANSITIONS = {"OPEN": ["SUBMITTED", "ABANDONED", "COMPLETED",
                      "PENDCANCEL": ["CANCELLED"],
                      "CANCELLED": []}
 
-### Signals
-
-cart_state_changed = dispatch.Signal(providing_args=["cart", "new_state",
-                                                     "old_state"])
-payment_state_changed = dispatch.Signal(providing_args=["payment", "new_state",
-                                                        "old_state"])
-
 ### Exceptions
 
 class HiiCartError(Exception):
@@ -98,6 +91,11 @@ class HiiCart(models.Model):
     lineitem_types = []
     recurring_lineitem_types = []
     one_time_lineitem_types = []
+
+    cart_state_changed = Signal(providing_args=["cart", "new_state",
+                                                "old_state"])
+    payment_state_changed = Signal(providing_args=["payment", "new_state",
+                                                   "old_state"])
 
     _cart_state = models.CharField(choices=HIICART_STATES, max_length=16, default="OPEN", db_index=True)
     _cart_uuid = models.CharField(max_length=36,db_index=True)
@@ -154,28 +152,28 @@ class HiiCart(models.Model):
         else:
             return "(unsaved) %s" % self.state
 
-    @staticmethod
-    def register_lineitem_type(recurring=False):
+    @classmethod
+    def register_lineitem_type(cart_class, recurring=False):
         def register_decorator(cls):
-            HiiCart.lineitem_types.append(cls)
+            cart_class.lineitem_types.append(cls)
             if recurring:
-                HiiCart.recurring_lineitem_types.append(cls)
+                cart_class.recurring_lineitem_types.append(cls)
             else:
-                HiiCart.one_time_lineitem_types.append(cls)
+                cart_class.one_time_lineitem_types.append(cls)
             return cls
         return register_decorator
 
     @property
     def lineitems(self):
-        return self._get_lineitems(HiiCart.lineitem_types)
+        return self._get_lineitems(self.lineitem_types)
 
     @property
     def recurring_lineitems(self):
-        return self._get_lineitems(HiiCart.recurring_lineitem_types)
+        return self._get_lineitems(self.recurring_lineitem_types)
 
     @property
     def one_time_lineitems(self):
-        return self._get_lineitems(HiiCart.one_time_lineitem_types)
+        return self._get_lineitems(self.one_time_lineitem_types)
 
     def _get_lineitems(self, cls_list):
         l = [cls.objects.filter(cart=self) for cls in cls_list]
@@ -333,9 +331,9 @@ class HiiCart(models.Model):
         super(HiiCart, self).save(*args, **kwargs)
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
-            cart_state_changed.send(sender="hiicart", cart=self,
-                                    old_state=self._old_state,
-                                    new_state=self.state)
+            self.cart_state_changed.send(sender=self.__class__.__name__, cart=self,
+                                         old_state=self._old_state,
+                                         new_state=self.state)
             self._old_state = self.state
 
     def set_state(self, newstate, validate=True):
@@ -509,9 +507,9 @@ class Payment(models.Model):
         super(Payment, self).save(*args, **kwargs)
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
-            payment_state_changed.send(sender="hiicart", payment=self,
-                                       old_state=self._old_state,
-                                       new_state=self.state)
+            self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
+                                            old_state=self._old_state,
+                                            new_state=self.state)
             self._old_state = self.state
 
 
