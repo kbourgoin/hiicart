@@ -403,7 +403,6 @@ class LineItemBase(models.Model):
     """
     _sub_total = models.DecimalField("Sub total", max_digits=18, decimal_places=10)
     _total = models.DecimalField("Total", max_digits=18, decimal_places=2, default=Decimal("0.00"))
-    cart = models.ForeignKey(HiiCart, verbose_name="Cart")
     description = models.TextField("Description", blank=True)
     discount = models.DecimalField("Item discount", max_digits=18, decimal_places=10, default=Decimal("0.00"))
     name = models.CharField("Item", max_length=100)
@@ -470,58 +469,7 @@ class OneTimeLineItemBase(LineItemBase):
 @HiiCart.register_lineitem_type()
 class LineItem(OneTimeLineItemBase):
     """A single line item in a purchase."""
-    pass
-
-
-class Note(models.Model):
-    """General note that can be attached to a cart, lineitem, or payment."""
-    content_object = generic.GenericForeignKey()
-    content_type = models.ForeignKey(ContentType)
-    object_id = models.PositiveIntegerField()
-    text = models.TextField("Note")
-
-    def __unicode__(self):
-        return self.text
-
-
-class PaymentBase(models.Model):
-    amount = models.DecimalField("amount", max_digits=18, decimal_places=2)
-    gateway = models.CharField("Payment Gateway", max_length=25, blank=True)
-    notes = generic.GenericRelation("Note")
-    state = models.CharField(max_length=16, choices=PAYMENT_STATES)
-    created = models.DateTimeField("Created", auto_now_add=True)
-    last_updated = models.DateTimeField("Last Updated", auto_now=True)
-    transaction_id = models.CharField("Transaction ID", max_length=45, db_index=True, blank=True, null=True)
-
-    class Meta:
-        abstract = True
-        verbose_name = "Payment"
-        verbose_name_plural = "Payments"
-
-    def __init__(self, *args, **kwargs):
-        """Override in order to keep track of changes to state."""
-        super(Payment, self).__init__(*args, **kwargs)
-        self._old_state = self.state
-
-    def __unicode__(self):
-        if self.id is not None:
-            return u"#%i $%s %s %s" % (self.id, self.amount,
-                                       self.state, self.created)
-        else:
-            return u"(unsaved) $%s %s" % (self.amount, self.state)
-
-    def save(self, *args, **kwargs):
-        super(Payment, self).save(*args, **kwargs)
-        # Signal sent after save in case someone queries database
-        if self.state != self._old_state:
-            self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
-                                            old_state=self._old_state,
-                                            new_state=self.state)
-            self._old_state = self.state
-
-
-class Payment(PaymentBase):
-    cart = models.ForeignKey(HiiCart, related_name="payments")
+    cart = models.ForeignKey(HiiCart, verbose_name="Cart")
 
 
 class RecurringLineItemBase(LineItemBase):
@@ -587,4 +535,55 @@ class RecurringLineItem(RecurringLineItemBase):
     To make a trial, put the trial price, tax, etc. into the parent LineItem,
     and mark this object trial=True, trial_length=xxx
     """
-    pass
+    cart = models.ForeignKey(HiiCart, verbose_name="Cart")
+
+
+class PaymentBase(models.Model):
+    amount = models.DecimalField("amount", max_digits=18, decimal_places=2)
+    gateway = models.CharField("Payment Gateway", max_length=25, blank=True)
+    notes = generic.GenericRelation("Note")
+    state = models.CharField(max_length=16, choices=PAYMENT_STATES)
+    created = models.DateTimeField("Created", auto_now_add=True)
+    last_updated = models.DateTimeField("Last Updated", auto_now=True)
+    transaction_id = models.CharField("Transaction ID", max_length=45, db_index=True, blank=True, null=True)
+
+    class Meta:
+        abstract = True
+        verbose_name = "Payment"
+        verbose_name_plural = "Payments"
+
+    def __init__(self, *args, **kwargs):
+        """Override in order to keep track of changes to state."""
+        super(Payment, self).__init__(*args, **kwargs)
+        self._old_state = self.state
+
+    def __unicode__(self):
+        if self.id is not None:
+            return u"#%i $%s %s %s" % (self.id, self.amount,
+                                       self.state, self.created)
+        else:
+            return u"(unsaved) $%s %s" % (self.amount, self.state)
+
+    def save(self, *args, **kwargs):
+        super(Payment, self).save(*args, **kwargs)
+        # Signal sent after save in case someone queries database
+        if self.state != self._old_state:
+            self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
+                                            old_state=self._old_state,
+                                            new_state=self.state)
+            self._old_state = self.state
+
+
+class Payment(PaymentBase):
+    cart = models.ForeignKey(HiiCart, related_name="payments")
+
+
+class Note(models.Model):
+    """General note that can be attached to a cart, lineitem, or payment."""
+    content_object = generic.GenericForeignKey()
+    content_type = models.ForeignKey(ContentType)
+    object_id = models.PositiveIntegerField()
+    text = models.TextField("Note")
+
+    def __unicode__(self):
+        return self.text
