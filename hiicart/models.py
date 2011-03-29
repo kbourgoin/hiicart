@@ -559,7 +559,7 @@ class PaymentBase(models.Model):
 
     def __init__(self, *args, **kwargs):
         """Override in order to keep track of changes to state."""
-        super(Payment, self).__init__(*args, **kwargs)
+        super(PaymentBase, self).__init__(*args, **kwargs)
         self._old_state = self.state
 
     def __unicode__(self):
@@ -570,7 +570,7 @@ class PaymentBase(models.Model):
             return u"(unsaved) $%s %s" % (self.amount, self.state)
 
     def save(self, *args, **kwargs):
-        super(Payment, self).save(*args, **kwargs)
+        super(PaymentBase, self).save(*args, **kwargs)
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
             self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
