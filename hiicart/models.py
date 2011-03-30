@@ -103,7 +103,9 @@ class HiiCartBase(models.Model):
     _sub_total = models.DecimalField("Subtotal", max_digits=18, decimal_places=2, blank=True, null=True)
     _total = models.DecimalField("Total", max_digits=18, decimal_places=2)
     tax = models.DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
-    tax_rate = models.DecimalField("Tax", max_digits=6, decimal_places=5, blank=True, null=True)
+    tax_rate = models.DecimalField("Tax Rate", max_digits=6, decimal_places=5, blank=True, null=True)
+    tax_country = models.CharField("Tax Country", max_length=2, blank=True, null=True)
+    tax_region = models.CharField("Tax Region", max_length=127, blank=True, null=True)
     shipping = models.DecimalField("Shipping Cost", max_digits=18, decimal_places=2, blank=True, null=True)
     shipping_option_name = models.CharField(max_length=50, blank=True, null=True)
     # Customer Info

@@ -91,30 +91,7 @@ class GoogleGateway(PaymentGatewayBase):
         # Construct cart xml
         self._update_with_cart_settings(cart_settings_kwargs)
         template = loader.get_template("gateway/google/cart.xml")
-        # cart = {'cart_uuid': self.cart.cart_uuid,
-        #         'thankyou': convertToUTF8(self.cart.cart_uuid),
-        #         'shipping': self.cart.shipping,
-        #         'shipping_option_name': convertToUTF8(self.cart.shipping_option_name),
-        #         'tax_rate': self.cart.tax_rate}
-        # one_time_lineitems = []
-        # for l in self.cart.one_time_lineitems:
-        #     one_time_lineitems.append({'name': convertToUTF8(l.name),
-        #                                'description': convertToUTF8(l.description),
-        #                                'sku': convertToUTF8(l.sku),
-        #                                'quantity': l.quantity,
-        #                                'unit_price': l.unit_price})
-        # recurring_lineitems = []
-        # for l in self.cart.recurring_lineitems:
-        #     recurring_lineitems.append({'name': convertToUTF8(l.name),
-        #                                 'description': convertToUTF8(l.description),
-        #                                 'sku': convertToUTF8(l.sku),
-        #                                 'quantity': l.quantity,
-        #                                 'unit_price': l.recurring_price,
-        #                                 'recurring_start': l.recurring_start,
-        #                                 'total': l.total})
         ctx = Context({"cart": self.cart,
-                       # "one_time_lineitems": one_time_lineitems,
-                       # "recurring_lineitems": recurring_lineitems,
                        "continue_shopping_url": self.settings.get("SHOPPING_URL", None),
                        "edit_cart_url": self.settings.get("EDIT_URL", None),
                        "currency": self.settings["CURRENCY"]})

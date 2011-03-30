@@ -65,13 +65,24 @@
         </flat-rate-shipping>
       </shipping-methods>
       {% endif %}
-      {% if cart.tax_rate %}
-      <tax-tables merchant-calculated="true">
+      {% if cart.tax_rate and cart.tax_country %}
+      <tax-tables>
         <default-tax-table>
           <tax-rules>
             <default-tax-rule>
               <shipping-taxed>false</shipping-taxed>
               <rate>{{ cart.tax_rate }}</rate>
+              <tax-area>
+                {% if cart.tax_country == 'US' %}
+                <us-state-area>
+                  <state>{{ cart.tax_region }}</state>
+                </us-state-area>
+                {% else %}
+                <postal-area>
+                  <country-code>{{ cart.tax_country }}</country-code>
+                </postal-area>
+                {% endif %}
+              </tax-area>
             </default-tax-rule>
           </tax-rules>
         </default-tax-table>
