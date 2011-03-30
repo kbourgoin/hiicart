@@ -1,21 +1,8 @@
-import re
-import httplib2
-import urllib
 import urllib2
-import urlparse
-
-from datetime import datetime, tzinfo
-from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.datastructures import SortedDict
-from urllib import unquote
-from urllib2 import HTTPError
-
-from hiicart.gateway.base import IPNBase, GatewayError
+from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal2.settings import SETTINGS as default_settings
-from hiicart.models import HiiCart, Payment
+from hiicart.models import Payment
+
 
 class Paypal2IPN(IPNBase):
     """Payment Gateway for Paypal Website Payments Pro."""

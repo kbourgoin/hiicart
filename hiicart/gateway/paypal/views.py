@@ -1,15 +1,11 @@
 import logging
-
 from django.http import HttpResponse
-from django.shortcuts import render_to_response
-from django.template import RequestContext
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
-
 from hiicart.gateway.base import GatewayError
 from hiicart.gateway.paypal.ipn import PaypalIPN
-from hiicart.models import HiiCart, Payment
-from hiicart.utils import format_exceptions
+from hiicart.utils import format_exceptions, cart_by_uuid
+
 
 log = logging.getLogger("hiicart.gateway.paypal")
 
@@ -20,10 +16,8 @@ def _find_cart(data):
     if not invoice:
         log.warn("No invoice # in data, aborting IPN")
         return None
-    try:
-        return HiiCart.objects.get(_cart_uuid=invoice[:36])
-    except HiiCart.DoesNotExist:
-        return None
+
+    return cart_by_uuid(invoice[:36])
 
 
 @csrf_view_exempt

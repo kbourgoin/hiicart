@@ -46,8 +46,8 @@ HIICART_STATES = (("OPEN", "Open"),
                   ("SUBMITTED", "Submitted"),
                   ("ABANDONED", "Abandoned"),
                   ("COMPLETED", "Completed"),
-                  ("RECURRING", "Recurring"), # Subscription active
-                  ("PENDCANCEL", "Pending Cancellation"), # Subscription cancelled, but not expired yet
+                  ("RECURRING", "Recurring"),  # Subscription active
+                  ("PENDCANCEL", "Pending Cancellation"),  # Subscription cancelled, but not expired yet
                   ("CANCELLED", "Cancelled"))
 
 PAYMENT_STATES = (("PENDING", "Pending"),
@@ -66,14 +66,25 @@ VALID_TRANSITIONS = {"OPEN": ["SUBMITTED", "ABANDONED", "COMPLETED",
                      "PENDCANCEL": ["CANCELLED"],
                      "CANCELLED": []}
 
-### Exceptions
+# For automatic tracking of all cart types, see HiiCartMetaclass
+CART_TYPES = []
+
 
 class HiiCartError(Exception):
     pass
 
-### Private Functions
 
-### Models
+class HiiCartMetaclass(models.base.ModelBase):
+    def __new__(cls, name, bases, attrs):
+        new_class = super(HiiCartMetaclass, cls).__new__(cls, name, bases, attrs)
+        try:
+            parents = [b for b in bases if issubclass(b, HiiCartBase)]
+            CART_TYPES.append(new_class)
+        except NameError:
+            # This is HiiCartBase
+            pass
+        return new_class
+
 
 class HiiCartBase(models.Model):
     """
@@ -82,17 +93,10 @@ class HiiCartBase(models.Model):
     Facilitates the cart being submitted to a payment gateway and some
     subscription management functions.
     """
-    lineitem_types = []
-    recurring_lineitem_types = []
-    one_time_lineitem_types = []
-
-    cart_state_changed = Signal(providing_args=["cart", "new_state",
-                                                "old_state"])
-    payment_state_changed = Signal(providing_args=["payment", "new_state",
-                                                   "old_state"])
+    __metaclass__ = HiiCartMetaclass
 
     _cart_state = models.CharField(choices=HIICART_STATES, max_length=16, default="OPEN", db_index=True)
-    _cart_uuid = models.CharField(max_length=36,db_index=True)
+    _cart_uuid = models.CharField(max_length=36, db_index=True)
     gateway = models.CharField(max_length=16, null=True, blank=True)
     notes = generic.GenericRelation("Note")
     # Redirection targets after purchase completes
@@ -147,6 +151,12 @@ class HiiCartBase(models.Model):
             return "#%s %s" % (self.id, self.state)
         else:
             return "(unsaved) %s" % self.state
+
+    @staticmethod
+    def register_cart_type():
+        def register_decorator(cls):
+            HiiCartBase.cart_types.append(cls)
+        return register_decorator
 
     @classmethod
     def register_lineitem_type(cart_class, recurring=False):
@@ -386,6 +396,15 @@ else:
 
 
 class HiiCart(HiiCartBase):
+    lineitem_types = []
+    recurring_lineitem_types = []
+    one_time_lineitem_types = []
+
+    cart_state_changed = Signal(providing_args=["cart", "new_state",
+                                                "old_state"])
+    payment_state_changed = Signal(providing_args=["payment", "new_state",
+                                                   "old_state"])
+
     if _user_delete_behavior is not None:
         user = models.ForeignKey(User, on_delete=_user_delete_behavior, null=True, blank=True)
     else:
@@ -485,7 +504,7 @@ class RecurringLineItemBase(LineItemBase):
     recurring_price = models.DecimalField("Recurring Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
     recurring_shipping = models.DecimalField("Recurring Shipping Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
     recurring_times = models.PositiveIntegerField("Recurring Times", help_text="Number of payments which will occur at the regular rate.  (optional)", default=0)
-    recurring_start = models.DateTimeField(null=True, blank=True) # Allows delayed start to subscription.
+    recurring_start = models.DateTimeField(null=True, blank=True)  # Allows delayed start to subscription.
     trial = models.BooleanField("Trial?", default=False)
     trial_price = models.DecimalField("Trial Price", default=Decimal("0.00"), max_digits=18, decimal_places=2)
     trial_length = models.PositiveIntegerField("Trial length", default=0)

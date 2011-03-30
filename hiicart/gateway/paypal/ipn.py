@@ -1,20 +1,13 @@
 import urllib2
-
-from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.http import urlencode
-from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
-
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal.settings import SETTINGS as default_settings
-from hiicart.models import HiiCart, Payment
+from hiicart.models import Payment
+
 
 POST_URL = "https://www.paypal.com/cgi-bin/webscr"
 POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
+
 
 class PaypalIPN(IPNBase):
     """Paypal IPN Handler"""

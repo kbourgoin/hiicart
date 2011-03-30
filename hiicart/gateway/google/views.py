@@ -1,19 +1,12 @@
-import base64
-import hashlib
-import hmac
-import httplib2
 import logging
-import xml.etree.cElementTree as ET
-
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
-
 from hiicart.gateway.base import GatewayError
 from hiicart.gateway.google.gateway import GoogleGateway
 from hiicart.gateway.google.ipn import GoogleIPN
-from hiicart.models import HiiCart
 from hiicart.utils import format_exceptions, call_func
+
 
 log = logging.getLogger("hiicart.gateway.google")
 
@@ -36,9 +29,7 @@ def _find_cart(data):
     if not private_data:
         log.error("Could not find private data. Data: %s" % str(data.items()))
         return None # Not a HiiCart purchase ?
-    # Find Purchase from private data
-    carts = HiiCart.objects.filter(_cart_uuid=private_data)
-    return carts[0] if carts else None
+    return cart_by_uuid(private_data)
 
 
 @csrf_view_exempt

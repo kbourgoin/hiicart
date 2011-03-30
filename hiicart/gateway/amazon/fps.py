@@ -3,27 +3,19 @@
 import base64
 import hashlib
 import hmac
-import logging
 import urllib
 import urllib2
 import urlparse
-import xml.etree.cElementTree as ET
-
-from datetime import datetime, tzinfo
+from datetime import datetime
 from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.http import urlencode
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
-from django.utils.translation import ugettext as _
 from urllib2 import HTTPError
 
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
 
 LIVE_FPS_URL = "https://fps.amazonaws.com/"
 TEST_FPS_URL = "https://fps.sandbox.amazonaws.com/"
+
 
 def _fps_base_url(settings):
     if settings['LIVE']:
@@ -32,16 +24,17 @@ def _fps_base_url(settings):
         url = mark_safe(TEST_FPS_URL)
     return url
 
+
 def do_fps(action, method, settings, **params):
     """Make a request against the FPS api."""
     values = {"AWSAccessKeyId" : settings["AWS_KEY"],
               "SignatureMethod" : "HmacSHA256",
               "SignatureVersion" : 2,
-              "Timestamp" : datetime.utcnow().isoformat() + '-00:00', 
+              "Timestamp" : datetime.utcnow().isoformat() + '-00:00',
               "Version" : "2008-09-17",
               "Action" : action}
     values.update(params)
-    values["Signature"] = generate_signature(method, values, 
+    values["Signature"] = generate_signature(method, values,
                                              _fps_base_url(settings), settings)
     url = "%s?%s" % (_fps_base_url(settings), urllib.urlencode(values))
     request = urllib2.Request(url)
@@ -56,6 +49,7 @@ def do_fps(action, method, settings, **params):
         else:
             raise
     return response
+
 
 def generate_signature(verb, values, request_url, settings):
     """

@@ -1,11 +1,12 @@
 import logging
 import os
-
 from hiicart.models import Payment
 from hiicart.utils import call_func
 
+
 class GatewayError(Exception):
     pass
+
 
 class _SharedBase(object):
     """Shared base class between IPNs and Gateways

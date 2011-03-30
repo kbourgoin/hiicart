@@ -1,29 +1,17 @@
 """Amazon Payments Gateway"""
 
-import base64
-import hashlib
-import hmac
 import urllib
-import urllib2
-import urlparse
-import xml.etree.cElementTree as ET
-
-from datetime import datetime, tzinfo
+from datetime import datetime
 from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.http import urlencode
-from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
-from urllib2 import HTTPError
-
 from hiicart.gateway.amazon import fps, ipn
 from hiicart.gateway.amazon.settings import SETTINGS as default_settings
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
+from hiicart.gateway.base import PaymentGatewayBase, SubmitResult, GatewayError
+
 
 LIVE_CBUI_URL = "https://authorize.payments.amazon.com/cobranded-ui/actions/start"
 TEST_CBUI_URL = "https://authorize.payments-sandbox.amazon.com/cobranded-ui/actions/start"
+
 
 class AmazonGateway(PaymentGatewayBase):
     """Payment Gateway for Amazon Payments."""

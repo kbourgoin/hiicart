@@ -1,26 +1,21 @@
 import logging
 import pprint
-import xml.etree.cElementTree as ET
-
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
-
-from hiicart.gateway.amazon import fps
 from hiicart.gateway.amazon.ipn import AmazonIPN
 from hiicart.gateway.countries import COUNTRIES
-from hiicart.models import HiiCart
+from hiicart.models import cart_by_uuid
 from hiicart.utils import format_exceptions
 
 log = logging.getLogger("hiicart.gateway.amazon")
 
+
 def _find_cart(request_data):
-    try:
-        # Subscription payments look like '<uuid>-4' so grab the uuid id
-        uuid = request_data["callerReference"][:36]
-        return HiiCart.objects.get(_cart_uuid=uuid)
-    except HiiCart.DoesNotExist:
-        return None
+    # Subscription payments look like '<uuid>-4' so grab the uuid id
+    uuid = request_data["callerReference"][:36]
+    return cart_by_uuid(uuid)
+
 
 @csrf_view_exempt
 @format_exceptions
@@ -45,7 +40,7 @@ def cbui(request, settings=None):
         return HttpResponseRedirect(handler.settings.get("CANCEL_RETURN_URL",
                                     handler.settings.get("RETURN_URL", "/")))
     if not cart:
-        log.error("Unable to find HiiCart.")
+        log.error("Unable to find cart.")
         return HttpResponseRedirect(handler.settings.get("ERROR_RETURN_URL",
                                     handler.settings.get("RETURN_URL", "/")))
     # Address collection. Any data already in cart is assumed correct
@@ -80,6 +75,7 @@ def cbui(request, settings=None):
         return HttpResponseRedirect(handler.settings['RETURN_URL'])
     return HttpResponseRedirect("/")
 
+
 @csrf_view_exempt
 @format_exceptions
 @never_cache
@@ -93,7 +89,7 @@ def ipn(request):
         log.error("Validation of Amazon request failed!")
         return HttpResponseBadRequest("Validation of Amazon request failed!")
     if not cart:
-        log.error("Unable to find HiiCart.")
+        log.error("Unable to find cart.")
         return HttpResponseBadRequest()
     if request.POST["notificationType"] == "TransactionStatus":
         handler.accept_payment(request.POST)

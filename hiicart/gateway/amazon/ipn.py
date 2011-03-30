@@ -1,22 +1,12 @@
-import urllib
-import urllib2
-import urlparse
 import xml.etree.cElementTree as ET
-
-from datetime import datetime, tzinfo
 from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.datastructures import SortedDict
-from urllib2 import HTTPError
-
 from hiicart.gateway.amazon import fps
 from hiicart.gateway.amazon.settings import SETTINGS as default_settings
 from hiicart.gateway.base import IPNBase
-from hiicart.models import HiiCart, Payment
+
 
 _FPS_NS = "{http://fps.amazonaws.com/doc/2008-09-17/}"
+
 
 class AmazonIPN(IPNBase):
     """Payment Gateway for Amazon Payments."""

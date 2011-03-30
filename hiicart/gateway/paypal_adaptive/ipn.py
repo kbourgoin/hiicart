@@ -1,20 +1,11 @@
 import re
-import urllib
 import urllib2
-import urlparse
-import xml.etree.cElementTree as ET
-
-from datetime import datetime, tzinfo
 from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.datastructures import SortedDict
-from urllib2 import HTTPError
-
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
-from hiicart.models import HiiCart, Payment
+from hiicart.models import Payment
+from hiicart.utils import cart_by_uuid
+
 
 # Payment State translation between Adaptive API and HiiCart
 _adaptive_states = {
@@ -39,7 +30,7 @@ class PaypalAPIPN(IPNBase):
         receive normal Paypal IPNs if the user has their IPN url pointing
         here."""
         self.log.debug("IPN for cart %s received" % data["tracking_id"])
-        cart = HiiCart.objects.get(_cart_uuid=data["tracking_id"])
+        cart = cart_by_uuid(data["tracking_id"])
         for i in range(6):
             key_base = "transaction[%i]." % i
             if not any([k.startswith(key_base) for k in data.keys()]):
