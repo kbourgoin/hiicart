@@ -76,13 +76,23 @@ class HiiCartError(Exception):
 
 class HiiCartMetaclass(models.base.ModelBase):
     def __new__(cls, name, bases, attrs):
-        new_class = super(HiiCartMetaclass, cls).__new__(cls, name, bases, attrs)
         try:
             parents = [b for b in bases if issubclass(b, HiiCartBase)]
-            CART_TYPES.append(new_class)
+            attrs['lineitem_types'] = []
+            attrs['recurring_lineitem_types'] = []
+            attrs['one_time_lineitem_types'] = []
+
+            attrs['cart_state_changed'] = Signal(providing_args=["cart", "new_state",
+                                                                 "old_state"])
+            attrs['payment_state_changed'] = Signal(providing_args=["payment", "new_state",
+                                                                    "old_state"])
         except NameError:
             # This is HiiCartBase
-            pass
+            parents = False
+        new_class = super(HiiCartMetaclass, cls).__new__(cls, name, bases, attrs)
+        if parents:
+            CART_TYPES.append(new_class)
+
         return new_class
 
 
@@ -396,15 +406,6 @@ else:
 
 
 class HiiCart(HiiCartBase):
-    lineitem_types = []
-    recurring_lineitem_types = []
-    one_time_lineitem_types = []
-
-    cart_state_changed = Signal(providing_args=["cart", "new_state",
-                                                "old_state"])
-    payment_state_changed = Signal(providing_args=["payment", "new_state",
-                                                   "old_state"])
-
     if _user_delete_behavior is not None:
         user = models.ForeignKey(User, on_delete=_user_delete_behavior, null=True, blank=True)
     else:
