@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_view_exempt
 from hiicart.gateway.base import GatewayError
 from hiicart.gateway.google.gateway import GoogleGateway
 from hiicart.gateway.google.ipn import GoogleIPN
-from hiicart.utils import format_exceptions, call_func
+from hiicart.utils import format_exceptions, call_func, cart_by_uuid
 
 
 log = logging.getLogger("hiicart.gateway.google")
