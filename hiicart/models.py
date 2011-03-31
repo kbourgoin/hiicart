@@ -590,15 +590,6 @@ class PaymentBase(models.Model):
         else:
             return u"(unsaved) $%s %s" % (self.amount, self.state)
 
-    def save(self, *args, **kwargs):
-        super(PaymentBase, self).save(*args, **kwargs)
-        # Signal sent after save in case someone queries database
-        if self.state != self._old_state:
-            self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
-                                            old_state=self._old_state,
-                                            new_state=self.state)
-            self._old_state = self.state
-
 
 @HiiCartBase.set_payment_class
 class Payment(PaymentBase):
