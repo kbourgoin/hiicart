@@ -176,7 +176,7 @@ class HiiCartBase(models.Model):
     @classmethod
     def set_payment_class(cart_class, payment_class):
         cart_class.payment_class = payment_class
-        return cart_class
+        return payment_class
 
     @property
     def lineitems(self):
