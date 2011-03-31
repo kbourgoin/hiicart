@@ -1,7 +1,7 @@
 import logging
 import traceback
 from django.http import HttpResponse
-from hiicart.utils import CART_TYPES
+from hiicart.models import CART_TYPES
 
 
 log = logging.getLogger("hiicart")
