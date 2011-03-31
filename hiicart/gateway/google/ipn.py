@@ -2,6 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.google.settings import SETTINGS as default_settings
+from hiicart.models import CART_TYPES
 
 
 class GoogleIPN(IPNBase):
@@ -15,8 +16,11 @@ class GoogleIPN(IPNBase):
     def _find_payment(data):
         """Find a payment based on the google id"""
         transaction_id = data["google-order-number"]
-        payments = self.cart.payment_class.objects.select_related('cart').filter(transaction_id=transaction_id)
-        return payments[0] if payments else None
+        for Cart in CART_TYPES:
+            try:
+                return Cart.payment_class.objects.select_related('cart').get(transaction_id=transaction_id)
+            except:
+                pass
 
     def _record_payment(self, data, amount=None, state="PAID"):
         """Record a payment from the IPN data."""
