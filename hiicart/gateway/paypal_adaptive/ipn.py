@@ -3,7 +3,6 @@ import urllib2
 from decimal import Decimal
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
-from hiicart.models import Payment
 from hiicart.utils import cart_by_uuid
 
 
@@ -35,10 +34,10 @@ class PaypalAPIPN(IPNBase):
             key_base = "transaction[%i]." % i
             if not any([k.startswith(key_base) for k in data.keys()]):
                 break
-            p = Payment.objects.filter(transaction_id=data[key_base + "id"])
+            p = self.cart.payment_class.objects.filter(transaction_id=data[key_base + "id"])
             if len(p) == 0:
-                p = Payment(cart=cart, gateway=cart.gateway,
-                            transaction_id=data[key_base + "id"])
+                p = self.cart.payment_class(cart=cart, gateway=cart.gateway,
+                                            transaction_id=data[key_base + "id"])
             else:
                 p = p[0]
             amount = re.sub("[^0-9.]", "", data[key_base + "amount"])
@@ -61,7 +60,7 @@ class PaypalAPIPN(IPNBase):
         # TODO: Should this simple mirror/reuse what's in gateway.paypal?
         transaction_id = data["txn_id"]
         self.log.debug("IPN for transaction #%s received" % transaction_id)
-        if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
+        if self.cart.payment_class.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
         if not self.cart:

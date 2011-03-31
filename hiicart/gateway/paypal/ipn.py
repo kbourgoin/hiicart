@@ -2,7 +2,6 @@ import urllib2
 from django.utils.safestring import mark_safe
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal.settings import SETTINGS as default_settings
-from hiicart.models import Payment
 
 
 POST_URL = "https://www.paypal.com/cgi-bin/webscr"
@@ -27,7 +26,7 @@ class PaypalIPN(IPNBase):
         """Accept a successful Paypal payment"""
         transaction_id = data["txn_id"]
         self.log.debug("IPN for transaction #%s received" % transaction_id)
-        if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
+        if self.cart.payment_class.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
         if not self.cart:

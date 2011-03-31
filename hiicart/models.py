@@ -162,12 +162,6 @@ class HiiCartBase(models.Model):
         else:
             return "(unsaved) %s" % self.state
 
-    @staticmethod
-    def register_cart_type():
-        def register_decorator(cls):
-            HiiCartBase.cart_types.append(cls)
-        return register_decorator
-
     @classmethod
     def register_lineitem_type(cart_class, recurring=False):
         def register_decorator(cls):
@@ -178,6 +172,11 @@ class HiiCartBase(models.Model):
                 cart_class.one_time_lineitem_types.append(cls)
             return cls
         return register_decorator
+
+    @classmethod
+    def set_payment_class(cart_class, payment_class):
+        cart_class.payment_class = payment_class
+        return cart_class
 
     @property
     def lineitems(self):
@@ -601,6 +600,7 @@ class PaymentBase(models.Model):
             self._old_state = self.state
 
 
+@HiiCartBase.set_payment_class
 class Payment(PaymentBase):
     cart = models.ForeignKey(HiiCart, related_name="payments")
 

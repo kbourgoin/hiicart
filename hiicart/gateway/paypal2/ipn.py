@@ -1,7 +1,6 @@
 import urllib2
 from hiicart.gateway.base import IPNBase
 from hiicart.gateway.paypal2.settings import SETTINGS as default_settings
-from hiicart.models import Payment
 
 
 class Paypal2IPN(IPNBase):
@@ -15,7 +14,7 @@ class Paypal2IPN(IPNBase):
         # TODO: Should this simple mirror/reuse what's in gateway.paypal?
         transaction_id = data["txn_id"]
         self.log.debug("IPN for transaction #%s received" % transaction_id)
-        if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
+        if self.cart.payment_class.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
         if not self.cart:
@@ -38,7 +37,7 @@ class Paypal2IPN(IPNBase):
     def accept_recurring_payment(self, data):
         transaction_id = data["txn_id"]
         self.log.debug("IPN for transaction #%s received" % transaction_id)
-        if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
+        if self.cart.payment_class.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
         if not self.cart:
