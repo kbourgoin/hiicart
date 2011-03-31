@@ -5,8 +5,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 from hiicart.gateway.amazon.ipn import AmazonIPN
 from hiicart.gateway.countries import COUNTRIES
-from hiicart.models import cart_by_uuid
-from hiicart.utils import format_exceptions
+from hiicart.utils import format_exceptions, cart_by_uuid
 
 log = logging.getLogger("hiicart.gateway.amazon")
 
