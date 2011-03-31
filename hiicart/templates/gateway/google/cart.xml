@@ -11,6 +11,11 @@
          <quantity>{{ lineitem.quantity }}</quantity>
          <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
          <unit-price currency="{{ currency }}">{{ lineitem.unit_price|floatformat:2 }}</unit-price>
+         {% if lineitem.digital_description %}
+         <digital-content>
+           <description>{{ lineitem.digital_description }}</description>
+         </digital-content>
+         {% endif %}
       </item>
       {% endfor %}
       {% for lineitem in cart.recurring_lineitems %}
@@ -39,6 +44,11 @@
             <merchant-item-id>{{ lineitem.sku }}</merchant-item-id>
             <unit-price currency="{{ currency }}">{{ lineitem.recurring_price|floatformat:2 }}</unit-price>
             <merchant-private-item-data>{{ cart.cart_uuid }}</merchant-private-item-data>
+            {% if lineitem.digital_description %}
+            <digital-content>
+              <description>{{ lineitem.digital_description }}</description>
+            </digital-content>
+            {% endif %}
           </recurrent-item>
         </subscription>
       </item>

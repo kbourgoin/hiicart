@@ -432,6 +432,7 @@ class LineItemBase(models.Model):
     ordering = models.PositiveIntegerField("Ordering", default=0)
     quantity = models.PositiveIntegerField("Quantity")
     sku = models.CharField("SKU", max_length=255, default="1", db_index=True)
+    digital_description = models.CharField("Digital Description", max_length=255, blank=True, null=True, default=None)
 
     class Meta:
         abstract = True
