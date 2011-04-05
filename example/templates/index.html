@@ -1,0 +1,77 @@
+<html>
+    <head><title>HiiCart Example App</title></head>
+    <body>
+        <h1>HiiCart Basic Integration</h1>
+        <div id="current_info">
+            <h2>Current Setup</h2>
+            <table>
+                <tr>
+                    <th>Gateway</th>
+                    <th>Credentials</th>
+                    <th>Status</th>
+                </tr>
+                <tr>
+                    <td>paypal</td>
+                    <td><pre>{{ paypal.0 }}</pre></td>
+                    <td class="{{ paypal.1 }}">{{ paypal.1 }}</td>
+                </tr>
+                <tr>
+                    <td>paypal2</td>
+                    <td><pre>{{ paypal2.0 }}</pre></td>
+                    <td class="{{ paypal2.1 }}">{{ paypal2.1 }}</td>
+                </tr>
+                <tr>
+                    <td>paypal_adaptive</td>
+                    <td><pre>{{ paypal_adaptive.0 }}</pre></td>
+                    <td class="{{ paypal_adaptive.1 }}">{{ paypal_adaptive.1 }}</td>
+                </tr>
+                <tr>
+                    <td>google</td>
+                    <td><pre>{{ google.0 }}</pre></td>
+                    <td class="{{ google.1 }}">{{ google.1 }}</td>
+                </tr>
+                <tr>
+                    <td>amazon</td>
+                    <td><pre>{{ amazon.0 }}</pre></td>
+                    <td class="{{ amazon.1 }}">{{ amazon.1 }}</td>
+                </tr>
+            </table>
+        </div>
+        <div id="test_purchase">
+            <h2>Make a Test Purchase</h2>
+            <form action="/" method="POST">
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Add to Cart</th>
+                </tr>
+                <tr>
+                    <td>Fancy Pants</td>
+                    <td>Some super special fancy pants, for fancy people</td>
+                    <td>$19.99</td>
+                    <td>{{ form.fancypants }}</td>
+                </tr>
+                <tr>
+                    <td>Monkey Butler</td>
+                    <td>A monkey butler of your own.</td>
+                    <td>$1,000.00</td>
+                    <td>{{ form.monkeybutler }}</td>
+                </tr>
+                <tr>
+                    <td>Magazine Subscription</td>
+                    <td>Subscribed to our latest newsletter. It's great!</td>
+                    <td>$5/month</td>
+                    <td>{{ form.subscription }}</td>
+                </tr>
+            </table>
+            {{ form.errors.as_ul }}
+            <div id="payment">
+                <span>Checkout using:</span>
+                <span>{{ form.gateway }}</span>
+                <input type="submit" value="buy"/>
+            </div>
+        </div>
+    </body>
+</html>

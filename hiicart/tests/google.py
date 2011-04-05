@@ -30,7 +30,7 @@ class GoogleCheckoutTestCase(base.HiiCartTestCase):
     def test_submit_recurring_delayed(self):
         """Test submitting a cart with recurring items to Google."""
         self._add_recurring_item()
-        ri = self.cart.recurringlineitems.all()[0]
+        ri = self.cart.recurring_lineitems[0]
         ri.recurring_start = datetime.now() + timedelta(days=7)
         ri.save()
         self.assertEqual(self.cart.state, "OPEN")

@@ -6,14 +6,15 @@ import xml.etree.cElementTree as ET
 from django.template import Context, loader
 
 from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
-from hiicart.gateway.google.errors import GoogleGatewayError
-from hiicart.gateway.google.settings import default_settings
+from hiicart.gateway.google.settings import SETTINGS as default_settings
+from hiicart.lib.unicodeconverter import convertToUTF8
+
 
 class GoogleGateway(PaymentGatewayBase):
     """Payment Gateway for Google Checkout."""
 
-    def __init__(self):
-        super(GoogleGateway, self).__init__("google", default_settings)
+    def __init__(self, cart):
+        super(GoogleGateway, self).__init__("google", cart, default_settings)
         self._require_settings(["MERCHANT_ID", "MERCHANT_KEY"])
 
     @property
@@ -22,7 +23,7 @@ class GoogleGateway(PaymentGatewayBase):
         if self.settings["LIVE"]:
             base = "https://checkout.google.com/api/checkout/v2/merchantCheckout/Merchant/%s"
         else:
-            base = "https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s" 
+            base = "https://sandbox.google.com/checkout/api/checkout/v2/merchantCheckout/Merchant/%s"
         return base % self.settings["MERCHANT_ID"]
 
     @property
@@ -34,6 +35,11 @@ class GoogleGateway(PaymentGatewayBase):
             base = "https://sandbox.google.com/checkout/api/checkout/v2/requestForm/Merchant/%s"
         return base % self.settings["MERCHANT_ID"]
 
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Google to validate credentials
+        return True
+
     def _send_command(self, url, params):
         """Send a command to the Checkout Order Processing API."""
         http = httplib2.Http()
@@ -42,15 +48,15 @@ class GoogleGateway(PaymentGatewayBase):
         params = urllib.urlencode(params)
         return http.request(url, "POST", params, headers=headers)
 
-    def cancel_recurring(self, cart):
+    def cancel_recurring(self):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         # Cancellation is a problem beacuse it requires refund. Need to find a way around this.
         # May have to redirect users to subscription page like Paypal does.
         raise NotImplementedError
-        #if cart.payments.count() == 0 or cart.recurringlineitems.count() == 0:
+        #if self.cart.payments.count() == 0 or len(self.cart.recurring_lineitems) == 0:
         #    return
-        #payment = cart.payments.all()[0]
-        #item = cart.recurringlineitems.all()[0]
+        #payment = self.cart.payments.all()[0]
+        #item = self.cart.recurring_lineitems[0]
         #params = {"_type" : "cancel-items",
         #          "google-order-number": payment.transaction_id,
         #          "reason" : "",
@@ -62,7 +68,7 @@ class GoogleGateway(PaymentGatewayBase):
         #item.is_active = False
         #item.save()
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """HiiCart doesn't currently support manually charging subscriptions with Google Checkout"""
         pass
 
@@ -71,30 +77,30 @@ class GoogleGateway(PaymentGatewayBase):
         return base64.b64encode("%s:%s" % (self.settings["MERCHANT_ID"],
                                            self.settings["MERCHANT_KEY"]))
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Remove any gateway-specific changes to a cloned cart."""
         pass
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to Google Checkout.
 
         Google Checkout's submission process is:
           * Construct an xml representation of the cart
           * Post the xml to Checkout, using HTTP Basic Auth
           * Checkout returns a url to redirect the user to"""
-        self._update_with_cart_settings(cart)
         # Construct cart xml
+        self._update_with_cart_settings(cart_settings_kwargs)
         template = loader.get_template("gateway/google/cart.xml")
-        ctx = Context({"cart" : cart,
-                       "continue_shopping_url" : self.settings.get("SHOPPING_URL", None),
-                       "edit_cart_url" : self.settings.get("EDIT_URL", None),
-                       "currency" : self.settings["CURRENCY"]})
-        cart_xml = template.render(ctx)
+        ctx = Context({"cart": self.cart,
+                       "continue_shopping_url": self.settings.get("SHOPPING_URL", None),
+                       "edit_cart_url": self.settings.get("EDIT_URL", None),
+                       "currency": self.settings["CURRENCY"]})
+        cart_xml = convertToUTF8(template.render(ctx))
         # Post to Google
-        headers = {"Content-type" : "application/x-www-form-urlencoded",
-                   "Authorization" : "Basic %s" % self.get_basic_auth()}
+        headers = {"Content-type": "application/x-www-form-urlencoded",
+                   "Authorization": "Basic %s" % self.get_basic_auth()}
         http = httplib2.Http()
-        response, content = http.request(self._cart_url, "POST", cart_xml, 
+        response, content = http.request(self._cart_url, "POST", cart_xml,
                                          headers=headers)
         xml = ET.XML(content)
         url = xml.find("{http://checkout.google.com/schema/2}redirect-url").text

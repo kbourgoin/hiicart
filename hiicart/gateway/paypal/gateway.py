@@ -9,9 +9,8 @@ from django.utils.http import urlencode
 from django.utils.datastructures import SortedDict
 from django.utils.safestring import mark_safe
 
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
-from hiicart.gateway.paypal.errors import PaypalGatewayError
-from hiicart.gateway.paypal.settings import default_settings
+from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
+from hiicart.gateway.paypal.settings import SETTINGS as default_settings
 
 PAYMENT_CMD = {
     "BUY_NOW" : "_xclick",
@@ -20,6 +19,7 @@ PAYMENT_CMD = {
     "UNSUBSCRIBE" : "_subscr-find"
     }
 NO_SHIPPING = {
+    "REQUIRE": "2",
     "NO" : "1",
     "YES" : "0"
     }
@@ -38,12 +38,12 @@ POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
 class PaypalGateway(PaymentGatewayBase):
     """Paypal payment processor"""
 
-    def __init__(self):
-        super(PaypalGateway, self).__init__("paypal", default_settings)
+    def __init__(self, cart):
+        super(PaypalGateway, self).__init__("paypal", cart, default_settings)
         self._require_settings(["BUSINESS"])
         if self.settings["ENCRYPT"]:
             self._require_settings(["PRIVATE_KEY", "PUBLIC_KEY", "PUBLIC_CERT_ID"])
-            self.localprikey = self.settings[ "PRIVATE_KEY"]
+            self.localprikey = self.settings["PRIVATE_KEY"]
             self.localpubkey = self.settings["PUBLIC_KEY"]
             self.paypalpubkey = os.path.abspath(os.path.join(
                 os.path.dirname(__file__),
@@ -52,7 +52,7 @@ class PaypalGateway(PaymentGatewayBase):
             try:
                 import M2Crypto
             except ImportError:
-                raise PaypalGatewayError("paypal_gateway: You must install M2Crypto to use an encrypted PayPal form.")
+                raise GatewayError("paypal_gateway: You must install M2Crypto to use an encrypted PayPal form.")
 
     @property
     def submit_url(self):
@@ -62,17 +62,9 @@ class PaypalGateway(PaymentGatewayBase):
             url = POST_TEST_URL
         return mark_safe(url)
 
-    @property
-    def submit_button_url(self, cart):
-        if cart.recurringlineitems.count() > 0:
-            url = self.settings["SUBSCRIBE_BUTTON_URL"]
-        else:
-            url = self.settings["BUY_BUTTON_URL"]
-        return mark_safe(url)
-
     def _encrypt_data(self, data):
         """
-        Encrypt the form data.  
+        Encrypt the form data.
 
         Refer to http://sandbox.rulemaker.net/ngps/m2/howto.smime.html
         """
@@ -83,7 +75,7 @@ class PaypalGateway(PaymentGatewayBase):
         raw = ["cert_id=%s" % certid]
         raw.extend([u"%s=%s" % (key, val) for key, val in data.items() if val])
         raw = "\n".join(raw)
-        raw = raw.encode("utf-8")        
+        raw = raw.encode("utf-8")
         # make an smime object
         s = SMIME.SMIME()
         # load our public and private keys
@@ -109,30 +101,42 @@ class PaypalGateway(PaymentGatewayBase):
         # write into a new buffer
         p7.write(out)
         return out.read()
-        
-    def _get_form_data(self, cart):
+
+    def _get_form_data(self):
         """Creates a list of key,val to be sumbitted to PayPal."""
-        account = self.settings["BUSINESS"]
-        submit = SortedDict()        
-        submit["business"] = account
+        submit = SortedDict()
+        submit["business"] = self.settings["BUSINESS"]
         submit["currency_code"] = self.settings["CURRENCY_CODE"]
         submit["notify_url"] = self.settings["IPN_URL"]
-        if self.settings["RETURN_ADDRESS"]:
+        if self.settings.get("CHARSET"):
+            submit["charset"] = self.settings["CHARSET"]
+        if self.settings.get("RETURN_ADDRESS"):
             submit["return"] = self.settings["RETURN_ADDRESS"]
+        if self.settings.get("RM"):
+            submit["rm"] = self.settings["RM"]
+        if self.settings.get("SHOPPING_URL"):
+            submit["shopping_url"] = self.settings["SHOPPING_URL"]
+        if self.settings.get("CANCEL_RETURN"):
+            submit["cancel_return"] = self.settings["CANCEL_RETURN"]
+        if self.settings.get("CBT"):
+            submit["cbt"] = self.settings["CBT"]
         #TODO: eventually need to work out the terrible PayPal shipping stuff
         #      for now, we are saying "no shipping" and adding all shipping as
         #      a handling charge.
-        submit["no_shipping"] = NO_SHIPPING["YES"]
-        submit["handling_cart"] = cart.shipping
-        submit["tax_cart"] = cart.tax
+        if self.settings.get("NO_SHIPPING"):
+            submit["no_shipping"] = self.settings["NO_SHIPPING"]
+        else:
+            submit["no_shipping"] = NO_SHIPPING["YES"]
+        submit["handling_cart"] = self.cart.shipping
+        submit["tax_cart"] = self.cart.tax
         # Locale
         submit["lc"] = self.settings["LOCALE"]
-        submit["invoice"] = cart.cart_uuid
-        if cart.recurringlineitems.count() > 1:
-            self.log.error("Cannot have more than one subscription in one order for paypal.  Only processing the first one for %s", cart)
+        submit["invoice"] = self.cart.cart_uuid
+        if len(self.cart.recurring_lineitems) > 1:
+            self.log.error("Cannot have more than one subscription in one order for paypal.  Only processing the first one for %s", self.cart)
             return
-        if cart.recurringlineitems.count() > 0:
-            item = cart.recurringlineitems.all()[0]
+        if len(self.cart.recurring_lineitems) > 0:
+            item = self.cart.recurring_lineitems[0]
             submit["src"] = "1"
             submit["cmd"] = PAYMENT_CMD["SUBSCRIPTION"]
             submit["item_name"] = item.name
@@ -140,17 +144,17 @@ class PaypalGateway(PaymentGatewayBase):
             submit["no_note"] = NO_NOTE["YES"]
             submit["bn"] = "PP-SubscriptionsBF"
             if item.trial and item.recurring_start:
-                raise PaypalGatewayError("PayPal can't have trial and delayed start")
+                raise GatewayError("PayPal can't have trial and delayed start")
             if item.recurring_start:
                 delay = item.recurring_start - datetime.now()
                 delay += timedelta(days=1) # Round up 1 day to PP shows right start
                 if delay.days > 90:
-                    raise PaypalGatewayError("PayPal doesn't support a delayed start of more than 90 days.")
+                    raise GatewayError("PayPal doesn't support a delayed start of more than 90 days.")
                 # Delayed subscription starts
                 submit["a1"] = "0"
                 submit["p1"] = delay.days
                 submit["t1"] = "D"
-            elif item.trial:   
+            elif item.trial:
                 # initial trial
                 submit["a1"] = item.trial_price
                 submit["p1"] = item.trial_length
@@ -176,48 +180,53 @@ class PaypalGateway(PaymentGatewayBase):
             submit["cmd"] = PAYMENT_CMD["CART"]
             submit["upload"] = "1"
             ix = 1
-            for item in cart.lineitems.all():
+            for item in self.cart.one_time_lineitems:
                 submit["item_name_%i" % ix] = item.name
                 submit["amount_%i" % ix] = item.unit_price.quantize(Decimal(".01"))
                 submit["quantity_%i" % ix] = item.quantity
+                submit["on0_%i" % ix] = "SKU"
+                submit["os0_%i" % ix] = item.sku
                 ix += 1
-        if cart.bill_street1:
-            submit["first_name"] = cart.first_name
-            submit["last_name"] = cart.last_name
-            submit["address1"] = cart.bill_street1
-            submit["address2"] = cart.bill_street2
-            submit["city"] = cart.bill_city
-            submit["country"] = cart.bill_country
-            submit["zip"] = cart.bill_postal_code
-            submit["email"] = cart.email
+        if self.cart.bill_street1:
+            submit["first_name"] = self.cart.bill_first_name
+            submit["last_name"] = self.cart.bill_last_name
+            submit["address1"] = self.cart.bill_street1
+            submit["address2"] = self.cart.bill_street2
+            submit["city"] = self.cart.bill_city
+            submit["country"] = self.cart.bill_country
+            submit["zip"] = self.cart.bill_postal_code
+            submit["email"] = self.cart.bill_email
             submit["address_override"] = "0"
             # only U.S. abbreviations may be used here
-            if cart.bill_country.lower() == "us" and len(cart.bill_state) == 2:
-                submit["state"] = cart.bill_state
+            if self.cart.bill_country.lower() == "us" and len(self.cart.bill_state) == 2:
+                submit["state"] = self.cart.bill_state
         return submit
 
-    def cancel_recurring(self, cart):
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # Can't validate credentials with Paypal AFAIK
+        return True
+
+    def cancel_recurring(self):
         """Cancel recurring items with gateway. Returns a CancelResult."""
-        self._update_with_cart_settings(cart)
         alias = self.settings["BUSINESS"]
-        button_url = self.settings["UNSUBSCRIBE_BUTTON_URL"]
-        url = "%s?cmd=%s&alias=%s" % (self.submit_url, 
+        url = "%s?cmd=%s&alias=%s" % (self.submit_url,
                                       PAYMENT_CMD["UNSUBSCRIBE"],
                                       self.settings["BUSINESS"])
         return CancelResult("url", url=url)
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """This Paypal API doesn't support manually charging subscriptions."""
         pass
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Nothing to fix here."""
         pass
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to the gateway. Returns a SubmitResult."""
-        self._update_with_cart_settings(cart)
-        data = self._get_form_data(cart)
+        self._update_with_cart_settings(cart_settings_kwargs)
+        data = self._get_form_data()
         if self.settings["ENCRYPT"]:
             data = {"encrypted": self._encrypt_data(data)}
         return SubmitResult("form", form_data={"action": self.submit_url,
