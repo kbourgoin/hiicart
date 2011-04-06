@@ -8,7 +8,7 @@ setup(
 
     packages = find_packages(),
 
-    install_requires = ['python-dateutil>=1.4', 'simplejson>=2.0.9'],
+    install_requires = ['python-dateutil>=1.4', 'simplejson>=2.1.3'],
     include_package_data = True,
 
     # metadata for upload to PyPI
