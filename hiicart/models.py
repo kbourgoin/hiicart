@@ -431,7 +431,6 @@ class LineItemBase(models.Model):
     notes = generic.GenericRelation("Note")
     ordering = models.PositiveIntegerField("Ordering", default=0)
     quantity = models.PositiveIntegerField("Quantity")
-    unit_price = models.DecimalField("Unit price", max_digits=18, decimal_places=10)
     sku = models.CharField("SKU", max_length=255, default="1", db_index=True)
     digital_description = models.CharField("Digital Description", max_length=255, blank=True, null=True, default=None)
 
@@ -473,6 +472,8 @@ class LineItemBase(models.Model):
 
 class OneTimeLineItemBase(LineItemBase):
     """Base class for line items that do not recur, for external apps to inherit"""
+
+    unit_price = models.DecimalField("Unit price", max_digits=18, decimal_places=10)
 
     class Meta:
         abstract = True
