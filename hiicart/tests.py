@@ -10,7 +10,7 @@ from hiicart.models import HiiCart, LineItem, RecurringLineItem
 class HiiCartTestCase(unittest.TestCase):
     """Basic tests to ensure HiiCart is working."""
     def setUp(self):
-        self.test_user = User.objects.create(username="tester", email="foo@bar.com") 
+        self.test_user = User.objects.create(username="tester", email="foo@bar.com")
         self.cart = HiiCart.objects.create(user=self.test_user)
         self.lineitem = LineItem.objects.create(cart=self.cart,name="Test Item",
                                                 quantity=1, sku="1",
@@ -123,7 +123,7 @@ class HiiCartTestCase(unittest.TestCase):
         self.assertEqual(self.cart.state, "CANCELLED")
         # PENDCANCEL -> CANCELLED
         self.cart = cart_base.clone()
-        self.test_comp_submit_recurring_norecur() 
+        self.test_comp_submit_recurring_norecur()
         self.cart.adjust_expiration(datetime.now()-timedelta(days=1))
         self.assertEqual(self.cart.state, "PENDCANCEL")
         self.cart.cancel_if_expired(grace_period=timedelta(days=7))
@@ -141,12 +141,12 @@ class HiiCartTestCase(unittest.TestCase):
         self.assertEqual(self.cart.notes.count(), 1)
         self.assertEqual(self.cart.notes.all()[0].text, note)
         # LineItem
-        li = self.cart.lineitems.all()[0]
+        li = self.cart.one_time_lineitems[0]
         li.notes.create(text=note)
         self.assertEqual(li.notes.count(), 1)
         self.assertEqual(li.notes.all()[0].text, note)
         # RecurringLineItem
-        ri = self.cart.recurringlineitems.all()[0]
+        ri = self.cart.recurring_lineitems[0]
         ri.notes.create(text=note)
         self.assertEqual(ri.notes.count(), 1)
         self.assertEqual(ri.notes.all()[0].text, note)
@@ -176,7 +176,7 @@ class HiiCartTestCase(unittest.TestCase):
 
     def test_comp_submit_recurring_norecur(self):
         """Test submitting a recurring item with ALLOW_RECURRING_COMP = False"""
-        settings.HIICART_SETTINGS["COMP"]["ALLOW_RECURRING_COMP"] =False 
+        settings.HIICART_SETTINGS["COMP"]["ALLOW_RECURRING_COMP"] =False
         self.assertEqual(self.cart.state, "OPEN")
         self._add_recurring_item()
         result = self.cart.submit("comp")
@@ -200,7 +200,7 @@ class HiiCartTestCase(unittest.TestCase):
     def test_comp_charge_recurring(self):
         """
         Test charge recurring with and without grace period.
-        
+
         NOTE: The timedelta used to adjust the expireation is never the same
               as grace_period because there will be a slight mismatch of a
               few milliseconds where the adjusted expiration will still
@@ -212,7 +212,7 @@ class HiiCartTestCase(unittest.TestCase):
         self.assertEqual(self.cart.payments.count(), 1)
         self.cart.charge_recurring()
         self.assertEqual(self.cart.payments.count(), 2)
-        # With grace period 
+        # With grace period
         self.cart = cart_base.clone()
         self.test_comp_submit_recurring()
         self.cart.adjust_expiration(datetime.now()-timedelta(days=1))

@@ -1,13 +1,11 @@
 *.pyc
 env/*
-settingscustom.py
-runserver.sh
+example/settings.py
 *.log
 .DS_Store
 build
 dist
 *.egg-info
 temp
+example/exampledb
 *.swp
-*.swo
-tags

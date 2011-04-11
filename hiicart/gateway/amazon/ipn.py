@@ -1,29 +1,18 @@
-import urllib
-import urllib2
-import urlparse
 import xml.etree.cElementTree as ET
-
-from datetime import datetime, tzinfo
 from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.datastructures import SortedDict
-from urllib2 import HTTPError
-
 from hiicart.gateway.amazon import fps
-from hiicart.gateway.amazon.errors import AmazonGatewayError
-from hiicart.gateway.amazon.settings import default_settings
+from hiicart.gateway.amazon.settings import SETTINGS as default_settings
 from hiicart.gateway.base import IPNBase
-from hiicart.models import HiiCart, Payment
+
 
 _FPS_NS = "{http://fps.amazonaws.com/doc/2008-09-17/}"
+
 
 class AmazonIPN(IPNBase):
     """Payment Gateway for Amazon Payments."""
 
-    def __init__(self):
-        super(AmazonIPN, self).__init__("amazon", default_settings)
+    def __init__(self, cart):
+        super(AmazonIPN, self).__init__("amazon", cart, default_settings)
 
     def _process_error(self, response):
         """Process error xml into (code, message, requestId)."""
@@ -35,89 +24,86 @@ class AmazonIPN(IPNBase):
             return (code.text, message.text, request_id.text)
         return None
 
-    def accept_payment(self, cart, data):
+    def accept_payment(self, data):
         """Record payment received from IPN."""
-        self._update_with_cart_settings(cart)
         total = None
         if "transactionAmount" in data and data["transactionAmount"].startswith("USD "):
             total = Decimal(data["transactionAmount"][4:])
         if data["transactionStatus"] == "PENDING":
             transaction_id = data["transactionId"]
-            pending = cart.payments.filter(transaction_id=transaction_id)
+            pending = self.cart.payments.filter(transaction_id=transaction_id)
             if not pending: # Could already be created in make_pay_request
-                self._create_payment(cart, total, transaction_id, "PENDING")
+                self._create_payment(total, transaction_id, "PENDING")
         elif data["transactionStatus"] == "SUCCESS":
             # Was this a pending payment?
             transaction_id = data["transactionId"]
-            pending = cart.payments.filter(transaction_id=transaction_id, state="PENDING")
+            pending = self.cart.payments.filter(transaction_id=transaction_id, state="PENDING")
             if pending:
                 pending[0].state = "PAID"
                 pending[0].save()
-            elif cart.payments.filter(transaction_id=transaction_id).count() == 0: # No duplicate payments
-                self._create_payment(cart, total, transaction_id, "PAID")
-            cart.update_state()
-            self.begin_recurring(cart)
+            elif self.cart.payments.filter(transaction_id=transaction_id).count() == 0: # No duplicate payments
+                self._create_payment(total, transaction_id, "PAID")
+            self.cart.update_state()
+            self.begin_recurring()
         elif data["transactionStatus"] == "CANCELLED":
-            message = "Purchase %i (txn:%s) was cancelled with message '%s'" % ( 
-                      cart.id, data['transactionId'], data['statusMessage'])
+            message = "Purchase %i (txn:%s) was cancelled with message '%s'" % (
+                      self.cart.id, data['transactionId'], data['statusMessage'])
             self.log.warn(message)
             transaction_id = data["transactionId"]
-            cancelled = cart.payments.filter(transaction_id=transaction_id)
+            cancelled = self.cart.payments.filter(transaction_id=transaction_id)
             for p in cancelled:
                 p.state = "CANCELLED"
                 p.notes.create(text=message)
                 p.save()
-            cart.update_state()
+            self.cart.update_state()
         elif data["transactionStatus"] == "FAILURE":
             self.log.warn("Purchase %i (txn:%s) failed with message '%s'" % (
-                cart.id, data['transactionId'], str(data.items())))
-            cart.update_state()
+                self.cart.id, data['transactionId'], data['statusMessage']))
+            self.cart.update_state()
 
-    def begin_recurring(self, cart):
+    def begin_recurring(self):
         """Save token and mark recurring item as active."""
-        self._update_with_cart_settings(cart)
-        if cart.recurringlineitems.count() == 0:
+        if len(self.cart.recurring_lineitems) == 0:
             return
-        for ri in cart.recurringlineitems.all():
+        for ri in self.cart.recurring_lineitems:
             ri.is_active = True
             ri.save()
-        cart.update_state()
+        self.cart.update_state()
 
-    def end_recurring(self, cart, token):
+    def end_recurring(self, token):
         """Mark a recurring item as inactive."""
-        self._update_with_cart_settings(cart)
-        if cart.recurringlineitems.count() == 0:
+        if len(self.cart.recurring_lineitems) == 0:
             return
-        for ri in cart.recurringlineitems.all():
-            ri.is_active = False 
+        for ri in self.cart.recurring_lineitems:
+            ri.is_active = False
             ri.save()
-        cart.update_state()
+        self.cart.update_state()
 
-    def make_pay_request(self, cart, token, caller_reference=None):
+    def make_pay_request(self, token, caller_reference=None):
         """
-        Make a Pay request for the purchase with the given token. 
+        Make a Pay request for the purchase with the given token.
         Return status received from Amazon.
         """
-        self._update_with_cart_settings(cart)
+        self._update_with_store_settings()
         if caller_reference is None:
-            caller_reference = cart.cart_uuid
-        response = fps.do_fps("Pay", "GET", self.settings, 
+            caller_reference = self.cart.cart_uuid
+        response = fps.do_fps("Pay", "GET", self.settings,
                    **{"CallerReference" : caller_reference,
-                      "SenderTokenId" : token, 
+                      "SenderTokenId" : token,
                       "TransactionAmount.CurrencyCode" : "USD",
-                      "TransactionAmount.Value" : cart.total})
+                      "TransactionAmount.Value" : self.cart.total})
         xml = ET.XML(response)
         status = xml.find(".//%sTransactionStatus" % _FPS_NS)
         if status is None:
             error = self._process_error(response)
             if not error:
                 msg = "Pay request failed for purchase '%s' with response: %s" % (
-                            cart, response) 
+                            self.cart, response)
             else:
                 msg = "Pay request failed for purchase '%s' with code/message: '%s' '%s' (request id: '%s')" % (
-                            cart, error[0], error[1], error[2])
+                            self.cart, error[0], error[1], error[2])
             self.log.warn(msg)
-            cart.notes.create(text=msg)
+            self.cart.notes.create(text=msg)
             # An error code, maybe?
             code = xml.find(".//Code")
             if code is not None:
@@ -127,35 +113,34 @@ class AmazonIPN(IPNBase):
             # This work for pending payments?
             transaction_id = xml.find(".//%sTransactionId" % _FPS_NS).text
             if status.text == "Pending":
-                self._create_payment(cart, cart.total, transaction_id, "PENDING")
+                self._create_payment(self.cart.total, transaction_id, "PENDING")
             elif status.text == "Success":
-                pending = cart.payments.filter(transaction_id=transaction_id,
-                                               state="PENDING")
+                pending = self.cart.payments.filter(transaction_id=transaction_id,
+                                                    state="PENDING")
                 if pending:
                     pending[0].state = "PAID"
                     pending[0].save()
                 else:
-                    self._create_payment(cart, cart.total, transaction_id, "PAID")
-                self.begin_recurring(cart)
+                    self._create_payment(self.cart.total, transaction_id, "PAID")
+                self.begin_recurring()
             else: # Cancelled or Failure
                 msg = "Pay request for purchase '%s' returned status '%s'. \nFull response: %s" % (
-                            cart, response)
+                            self.cart, response)
                 self.log.warn(msg)
-                cart.notes.create(text=msg)
-            cart.update_state()
+                self.cart.notes.create(text=msg)
+            self.cart.update_state()
             return status.text
 
-    def save_recurring_token(self, cart, token):
+    def save_recurring_token(self, token):
         """Save recurring use token for future use."""
-        self._update_with_cart_settings(cart)
-        if cart.recurringlineitems.count() == 0:
+        if len(self.cart.recurring_lineitems) == 0:
             return
-        ri = cart.recurringlineitems.all()[0]
+        ri = self.cart.recurring_lineitems[0]
         ri.payment_token = token
         ri.save()
 
-    def verify_signature(self, raw_data, http_method, endpoint_uri, cart):
-        self._update_with_cart_settings(cart)
+    def verify_signature(self, raw_data, http_method, endpoint_uri):
+        self._update_with_store_settings()
         response = fps.do_fps("VerifySignature", http_method, self.settings,
                               UrlEndPoint=endpoint_uri,
                               HttpParameters=raw_data)
