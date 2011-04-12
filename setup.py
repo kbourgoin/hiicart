@@ -4,7 +4,7 @@ setup(
 
     name = "HiiCart",
 
-    version = "0.2.0",
+    version = "0.2.1",
 
     packages = find_packages(),
 
@@ -17,6 +17,6 @@ setup(
     description = "HiiDef django shopping cart",
     license = "MIT License",
     keywords = "django cart bursar",
-    url = "http://github.com/kbourgoin/hiicart"
+    url = "http://github.com/hiidef/hiicart"
 
 )
