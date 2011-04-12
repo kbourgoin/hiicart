@@ -43,7 +43,7 @@ def ipn(request):
     log.info("IPN Notification received from Google Checkout: %s" % data)
     cart = _find_cart(data)
     if not cart:
-        return GatewayError("google gateway: Unknown tranaction")
+        raise GatewayError("google gateway: Unknown tranaction")
     gateway = GoogleGateway(cart)
     # Check credentials
     if gateway.settings.get("IPN_AUTH_VALS", False):
