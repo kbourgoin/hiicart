@@ -5,10 +5,9 @@ import urllib
 from decimal import Decimal
 from django.core.urlresolvers import reverse
 
-from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult
+from hiicart.gateway.base import PaymentGatewayBase, CancelResult, SubmitResult, GatewayError
 from hiicart.gateway.paypal_adaptive import api
-from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
-from hiicart.gateway.paypal_adaptive.settings import default_settings
+from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
 
 POST_URL = "https://www.paypal.com/cgi-bin/webscr"
 POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
@@ -16,15 +15,15 @@ POST_TEST_URL = "https://www.sandbox.paypal.com/cgi-bin/webscr"
 class PaypalAPGateway(PaymentGatewayBase):
     """Payment Gateway for Paypal Adaptive Payments."""
 
-    def __init__(self):
-        super(PaypalAPGateway, self).__init__(
-                "paypal_adaptive", default_settings)
+    def __init__(self, cart):
+        super(PaypalAPGateway, self).__init__("paypal_adaptive", cart, default_settings)
+        self._require_settings(["APP_ID", "PASSWORD", "SIGNATURE", "USERID"])
 
     @property
     def ipn_url(self):
         if "IPN_URL" not in self.settings:
             if "BASE_URL" not in self.settings:
-                raise PaypalAPGatewayError(
+                raise GatewayError(
                         "Either IPN_URL or BASE_URL is required.")
             # Import here to avoid circular import
             from hiicart.gateway.paypal_adaptive.views import ipn
@@ -40,30 +39,35 @@ class PaypalAPGateway(PaymentGatewayBase):
             url = POST_TEST_URL
         return url
 
-    def cancel_recurring(self, cart):
+    def _is_valid(self):
+        """Return True if gateway is valid."""
+        # TODO: Query Paypal to validate credentials
+        return True
+
+    def cancel_recurring(self):
         """Cancel recurring lineitem."""
-        raise PaypalAPGatewayError("Adaptive Payments doesn't support recurring payments.")
+        raise GatewayError("Adaptive Payments doesn't support recurring payments.")
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """Charge a cart's recurring item, if necessary."""
-        raise PaypalAPGatewayError("Adaptive Payments doesn't support recurring payments.")
+        raise GatewayError("Adaptive Payments doesn't support recurring payments.")
 
-    def sanitize_clone(self, cart):
+    def sanitize_clone(self):
         """Nothing to do here..."""
-        return cart
+        return self.cart
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit the cart to the Paypal Adaptive Payments API"""
-        if cart.recurringlineitems.count() > 0:
-            raise PaypalAPGatewayError("Adaptive Payments doesn't support recurring payments.")
-        self._update_with_cart_settings(cart)
+        self._update_with_cart_settings(cart_settings_kwargs)
+        if len(self.cart.recurring_lineitems) > 0:
+            raise GatewayError("Adaptive Payments doesn't support recurring payments.")
         params = {"actionType": "PAY",
                   "currencyCode": "USD",
                   "feesPayer": "EACHRECEIVER",
                   "cancelUrl": self.settings["CANCEL_URL"],
                   "returnUrl": self.settings["RETURN_URL"],
                   "ipnNotificationUrl": self.ipn_url,
-                  "trackingId": cart.cart_uuid,
+                  "trackingId": self.cart.cart_uuid,
                 }
         for i, r in enumerate(self.settings["RECEIVERS"]):
             params["receiverList.receiver(%i).email" % i] = r[0]

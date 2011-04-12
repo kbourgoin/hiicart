@@ -1,21 +1,10 @@
 import re
-import urllib
 import urllib2
-import urlparse
-import xml.etree.cElementTree as ET
-
-from datetime import datetime, tzinfo
 from decimal import Decimal
-from datetime import datetime, timedelta
-from django.contrib.sites.models import Site
-from django.core import urlresolvers
-from django.utils.datastructures import SortedDict
-from urllib2 import HTTPError
-
-from hiicart.gateway.paypal_adaptive.errors import PaypalAPGatewayError
-from hiicart.gateway.paypal_adaptive.settings import default_settings
 from hiicart.gateway.base import IPNBase
-from hiicart.models import HiiCart, Payment
+from hiicart.gateway.paypal_adaptive.settings import SETTINGS as default_settings
+from hiicart.utils import cart_by_uuid
+
 
 # Payment State translation between Adaptive API and HiiCart
 _adaptive_states = {
@@ -28,20 +17,8 @@ _adaptive_states = {
 class PaypalAPIPN(IPNBase):
     """Payment Gateway for Paypal Adaptive Payments."""
 
-    def __init__(self):
-        super(PaypalAPIPN, self).__init__(
-                "paypal_adaptive", default_settings)
-
-    def _find_cart(self, data):
-        # invoice may have a suffix due to retries
-        invoice = data["invoice"] if "invoice" in data else data["item_number"]
-        if not invoice:
-            self.log.warn("No invoice # in data, aborting IPN")
-            return None
-        try:
-            return HiiCart.objects.get(_cart_uuid=invoice[:36])
-        except HiiCart.DoesNotExist:
-            return None        
+    def __init__(self, cart):
+        super(PaypalAPIPN, self).__init__("paypal_adaptive", cart, default_settings)
 
     def accept_adaptive_payment(self, data):
         """Accept a payment IPN coming through the Adaptive API.
@@ -52,15 +29,15 @@ class PaypalAPIPN(IPNBase):
         receive normal Paypal IPNs if the user has their IPN url pointing
         here."""
         self.log.debug("IPN for cart %s received" % data["tracking_id"])
-        cart = HiiCart.objects.get(_cart_uuid=data["tracking_id"])
+        cart = cart_by_uuid(data["tracking_id"])
         for i in range(6):
             key_base = "transaction[%i]." % i
             if not any([k.startswith(key_base) for k in data.keys()]):
                 break
-            p = Payment.objects.filter(transaction_id=data[key_base + "id"])
+            p = self.cart.payment_class.objects.filter(transaction_id=data[key_base + "id"])
             if len(p) == 0:
-                p = Payment(cart=cart, gateway=cart.gateway,
-                            transaction_id=data[key_base + "id"])
+                p = self.cart.payment_class(cart=cart, gateway=cart.gateway,
+                                            transaction_id=data[key_base + "id"])
             else:
                 p = p[0]
             amount = re.sub("[^0-9.]", "", data[key_base + "amount"])
@@ -83,31 +60,38 @@ class PaypalAPIPN(IPNBase):
         # TODO: Should this simple mirror/reuse what's in gateway.paypal?
         transaction_id = data["txn_id"]
         self.log.debug("IPN for transaction #%s received" % transaction_id)
-        if Payment.objects.filter(transaction_id=transaction_id).count() > 0:
+        if self.cart.payment_class.objects.filter(transaction_id=transaction_id).count() > 0:
             self.log.warn("IPN #%s, already processed", transaction_id)
             return
-        cart = self._find_cart(data)
-        if not cart:
+        if not self.cart:
             self.log.warn("Unable to find purchase for IPN.")
             return
-        payment = self._create_payment(cart, data["mc_gross"],
-                                       transaction_id, "PAID")
+        payment = self._create_payment(data["mc_gross"], transaction_id, "PAID")
         if data.get("note", False):
             payment.notes.create(text="Comment via IPN: \n%s" % data["note"])
         # Fill in billing information. Consider any already in HiiCart correct
-        cart.email = cart.email or data.get("payer_email", "")
-        cart.first_name = cart.first_name or data.get("first_name", "")
-        cart.last_name = cart.last_name or data.get("last_name", "")
+        self.cart.bill_email = self.cart.bill_email or data.get("payer_email", "")
+        self.cart.ship_email = self.cart.ship_email or self.cart.bill_email
+        self.cart.bill_first_name = self.cart.bill_first_name or data.get("first_name", "")
+        self.cart.ship_first_name = self.cart.ship_first_name or self.cart.bill_first_name
+        self.cart.bill_last_name = self.cart.bill_last_name or data.get("last_name", "")
+        self.cart.ship_last_name = self.cart.ship_last_name or self.cart.bill_last_name
         street = data.get("address_street", "")
-        cart.bill_street1 = cart.bill_street1 or street.split("\r\n")[0]
+        self.cart.bill_street1 = self.cart.bill_street1 or street.split("\r\n")[0]
+        self.cart.ship_street1 = self.cart.ship_street1 or self.cart.bill_street1
         if street.count("\r\n") > 0:
-            cart.bill_street2 = cart.bill_street2 or street.split("\r\n")[1]
-        cart.bill_city = cart.bill_city or data.get("address_city", "")
-        cart.bill_state = cart.bill_state or data.get("address_state", "")
-        cart.bill_postal_code = cart.bill_postal_code or data.get("address_zip", "")
-        cart.bill_country = cart.bill_country or data.get("address_country_code", "")
-        cart.update_state()
-        cart.save()
+            self.cart.bill_street2 = self.cart.bill_street2 or street.split("\r\n")[1]
+            self.cart.ship_street2 = self.cart.ship_street2 or self.cart.bill_street2
+        self.cart.bill_city = self.cart.bill_city or data.get("address_city", "")
+        self.cart.ship_city = self.cart.ship_city or self.cart.bill_city
+        self.cart.bill_state = self.cart.bill_state or data.get("address_state", "")
+        self.cart.ship_state = self.cart.ship_state or self.cart.bill_state
+        self.cart.bill_postal_code = self.cart.bill_postal_code or data.get("address_zip", "")
+        self.cart.ship_postal_code = self.cart.ship_postal_code or self.cart.bill_postal_code
+        self.cart.bill_country = self.cart.bill_country or data.get("address_country_code", "")
+        self.cart.ship_country = self.cart.ship_country or self.cart.bill_country
+        self.cart.update_state()
+        self.cart.save()
 
     def confirm_ipn_data(self, raw_data):
         """Confirm IPN data using string raw post data.

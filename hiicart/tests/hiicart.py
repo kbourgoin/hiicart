@@ -19,7 +19,7 @@ class HiiCartTestCase(base.HiiCartTestCase):
         self.assertEqual(self.cart.state, "RECURRING")
 
     def _submit_recurring_norecur(self):
-        settings.HIICART_SETTINGS["COMP"]["ALLOW_RECURRING_COMP"] =False 
+        settings.HIICART_SETTINGS["COMP"]["ALLOW_RECURRING_COMP"] =False
         self.assertEqual(self.cart.state, "OPEN")
         self._add_recurring_item()
         result = self.cart.submit("comp")
@@ -120,7 +120,7 @@ class HiiCartTestCase(base.HiiCartTestCase):
         self.assertEqual(self.cart.state, "CANCELLED")
         # PENDCANCEL -> CANCELLED
         self.cart = cart_base.clone()
-        self._submit_recurring_norecur() 
+        self._submit_recurring_norecur()
         self.cart.adjust_expiration(datetime.now()-timedelta(days=1))
         self.assertEqual(self.cart.state, "PENDCANCEL")
         self.cart.cancel_if_expired(grace_period=timedelta(days=7))
@@ -138,12 +138,12 @@ class HiiCartTestCase(base.HiiCartTestCase):
         self.assertEqual(self.cart.notes.count(), 1)
         self.assertEqual(self.cart.notes.all()[0].text, note)
         # LineItem
-        li = self.cart.lineitems.all()[0]
+        li = self.cart.one_time_lineitems[0]
         li.notes.create(text=note)
         self.assertEqual(li.notes.count(), 1)
         self.assertEqual(li.notes.all()[0].text, note)
         # RecurringLineItem
-        ri = self.cart.recurringlineitems.all()[0]
+        ri = self.cart.recurring_lineitems[0]
         ri.notes.create(text=note)
         self.assertEqual(ri.notes.count(), 1)
         self.assertEqual(ri.notes.all()[0].text, note)

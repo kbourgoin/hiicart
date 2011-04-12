@@ -1,0 +1,10 @@
+<html>
+    <head><title>Paypal Receipt</title></head>
+    <body>
+        Cart ID: {{ cart.cart_uuid }}
+        <form action="/hiicart/paypal2/do_pay" method="POST">
+            {{ form.as_p }}
+            <input type="submit" value="Complete Purchase"/>
+        </form>
+    </body>
+</html>

@@ -1,49 +1,64 @@
 import logging
 import os
-
-from django.conf import settings
-
-from hiicart.models import Payment
 from hiicart.utils import call_func
+
 
 class GatewayError(Exception):
     pass
 
-# Should these have a common base class? Seems excessive vs. code duplication.
 
 class _SharedBase(object):
-    """Shared base class between IPNs and Gateways that accommodates their significant shared functionality."""
+    """Shared base class between IPNs and Gateways
 
-    def __init__(self, name, default_settings={}):
+    Created because they have significant overlapping functionality.
+    """
+
+    def __init__(self, name, cart, default_settings=None):
+        """Initalize logger and settings.
+
+        Duplicate settings are overwritten according to priority according to
+        the following ascending priority:
+        default_settings -> global -> gateway defined in HIICART_SETTINGS
+        """
         self.name = name.upper()
         self.log = logging.getLogger("hiicart.gateway." + self.name)
-        if self.name not in settings.HIICART_SETTINGS:
-            raise GatewayError("Settings not defined for %s" % self.name)
-        self.settings = default_settings.copy()
-        self.settings.update(settings.HIICART_SETTINGS[self.name])
-        # Copy down some settings, if not overridden locally
-        if "LIVE" not in self.settings: # app-level setting with gateway-level override
-            self.settings["LIVE"] = settings.HIICART_SETTINGS["LIVE"]
-        if "EXPIRATION_GRACE_PERIOD" not in self.settings and "EXPIRATION_GRACE_PERIOD" in settings.HIICART_SETTINGS:
-            self.settings["EXPIRATION_GRACE_PERIOD"] = settings.HIICART_SETTINGS["EXPIRATION_GRACE_PERIOD"]
-        if "CHARGE_RECURRING_GRACE_PERIOD" not in self.settings and "CHARGE_RECURRING_GRACE_PERIOD" in settings.HIICART_SETTINGS:
-            self.settings["CHARGE_RECURRING_GRACE_PERIOD"] = settings.HIICART_SETTINGS["CHARGE_RECURRING_GRACE_PERIOD"]
+        self.settings = default_settings or {}
+        self.settings.update(cart.hiicart_settings)
+        if self.name in self.settings:
+            self.settings.update(cart.hiicart_settings[self.name])
+        self._settings_base = self.settings.copy()
+        self.cart = cart
+        self._update_with_store_settings()
 
-    def _create_payment(self, cart, amount, transaction_id, state):
+    def _create_payment(self, amount, transaction_id, state):
         """Record a payment."""
-        pmnt = Payment(amount=amount, gateway=self.name, cart=cart, 
-                       state=state, transaction_id=transaction_id)
+        pmnt = self.cart.payment_class(amount=amount, gateway=self.name, cart=self.cart,
+                                       state=state, transaction_id=transaction_id)
         pmnt.save()
         return pmnt
 
-    def _update_with_cart_settings(self, hiicart):
+    def _update_with_store_settings(self):
         """Pull cart-specific settings and update self.settings with them.
         We need an DI facility to get cart-specific settings in. This way,
         we're able to have different carts use different google accounts."""
-        if not settings.HIICART_SETTINGS.get("CART_SETTINGS_FN", False):
-            return
-        s = call_func(settings.HIICART_SETTINGS["CART_SETTINGS_FN"], hiicart)
-        self.settings.update(s)
+        if self.cart.hiicart_settings.get("STORE_SETTINGS_FN"):
+            s = call_func(self.cart.hiicart_settings["STORE_SETTINGS_FN"], self.cart)
+            if s:
+                self.settings.update(s)
+                return
+        self.settings = self._settings_base.copy() # reset to defaults
+
+    def _update_with_cart_settings(self, cart_settings_kwargs):
+        """Pull cart-specific settings and update self.settings with them.
+        We need an DI facility to get cart-specific settings in. This way,
+        we're able to have different carts use different google accounts."""
+        if self.cart.hiicart_settings.get("CART_SETTINGS_FN"):
+            cart_settings_kwargs = cart_settings_kwargs or {}
+            s = call_func(self.cart.hiicart_settings["CART_SETTINGS_FN"], self.cart, **cart_settings_kwargs)
+            if s:
+                self.settings.update(s)
+                return
+        self.settings = self._settings_base.copy() # reset to defaults
 
     def _require_files(self, filenames):
         """Verify a file exists on disk. Usually use for key files."""
@@ -55,11 +70,11 @@ class _SharedBase(object):
             raise GatewayError("The following files are required for %s: %s" % (
                                 self.name, ", ".join(errors)))
 
-    def _require_settings(self, settings):
+    def _require_settings(self, required_settings):
         """Verify that certain settings exist, raising an error if not."""
         errors = []
-        for setting in settings:
-            if setting not in self.settings:
+        for setting in required_settings:
+            if not self.settings.get(setting, False):
                 errors.append(setting)
         if len(errors) > 0:
             raise GatewayError("The following settings are required for %s: %s" % (
@@ -81,14 +96,23 @@ class PaymentGatewayBase(_SharedBase):
 
     Provides a common interface for working with all payment gateways.
     """
-    def cancel_recurring(self, cart):
+    def __init__(self, name, cart, default_settings=None):
+        super(PaymentGatewayBase, self).__init__(name, cart, default_settings)
+
+    def _is_valid(self):
+        """Returns True if the gateway is set up properly.
+        NOTE: Will return Fase if using cart-specific settings and omitting
+        required settings from global definition."""
+        raise NotImplementedError
+
+    def cancel_recurring(self):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         raise NotImplementedError
 
-    def charge_recurring(self, cart, grace_period=None):
+    def charge_recurring(self, grace_period=None):
         """
         Charge recurring purchases if necessary.
-        
+
         Charges recurring items with the gateway, if possible. An optional
         grace period can be provided to avoid premature charging. This is
         provided since the gateway might be in another timezone, causing
@@ -100,7 +124,7 @@ class PaymentGatewayBase(_SharedBase):
         """Remove any gateway-specific changes to a cloned cart."""
         raise NotImplementedError
 
-    def submit(self, cart, collect_address=False):
+    def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to the gateway. Returns a SubmitResult."""
         raise NotImplementedError
 
@@ -109,7 +133,7 @@ class CancelResult(object):
     """
     The result of a cancel operation.
     Currently supported result types are url and None.
-    
+
     url: The user should to be redirected to result.url.
     None: type is set to None if no further action is required.
     """
@@ -124,7 +148,7 @@ class SubmitResult(object):
     """
     The result of a submit operation.
     Currently supported result types are url, form, and None.
-    
+
     url: The user should to be redirected to result.url.
     form: form_action is the target url; form_fields is a dict of form data.
     None: type is set to None if no further action is required.
