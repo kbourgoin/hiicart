@@ -37,6 +37,8 @@ def ipn(request):
     log.info("IPN Notification received from Paypal: %s" % data)
     # Verify the data with Paypal
     cart = _find_cart(data)
+    if not cart:
+        raise GatewayError('paypal gateway: Unknown transaction')
     handler = PaypalIPN(cart)
     if not handler.confirm_ipn_data(request.raw_post_data):
         log.error("Paypal IPN Confirmation Failed.")
