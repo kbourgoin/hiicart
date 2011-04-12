@@ -1,10 +1,13 @@
 from setuptools import setup, find_packages
+from hiicart import __version__
+
+
 # Also requires python-dev and python-openssl
 setup(
 
     name = "HiiCart",
 
-    version = "0.2.2",
+    version = __version__,
 
     packages = find_packages(),
 
