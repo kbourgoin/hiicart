@@ -1,3 +1,6 @@
+__version__ = '0.2.3'
+
+
 def validate_gateway(gateway):
     """Test that a gateway is correctly set up.
     Returns True if successful, or an error message."""
@@ -12,7 +15,7 @@ def validate_gateway(gateway):
     elif gateway == "google":
         cls = GoogleGateway
     elif gateway == "paypal":
-        cls = PaypalGateway 
+        cls = PaypalGateway
     elif gateway == "paypal2":
         cls = Paypal2Gateway
     elif gateway == "paypal_adaptive":
