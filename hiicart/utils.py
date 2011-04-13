@@ -27,8 +27,7 @@ def format_exceptions(method):
             return method(*args, **kwargs)
         except:
             fmt = traceback.format_exc()
-            log.error("Exception encountered:")
-            log.error(fmt)
+            log.error("Exception encountered: %s" % fmt)
             response = HttpResponse(fmt)
             response.status_code=500 # Definitely _not_ a 200 resposne
             return response
