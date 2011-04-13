@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-from hiicart import __version__
+from hiicart import __version__ as version
 
 
 # Also requires python-dev and python-openssl
@@ -7,7 +7,7 @@ setup(
 
     name = "HiiCart",
 
-    version = __version__,
+    version = version,
 
     packages = find_packages(),
 

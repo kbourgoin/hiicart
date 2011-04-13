@@ -266,7 +266,7 @@ class HiiCartBase(models.Model):
         the cart as cancelled.
         """
         gateway = self.get_gateway()
-        response = gateway.cancel_recurring(self)
+        response = gateway.cancel_recurring()
         if skip_pendcancel:
             self.set_state("CANCELLED")
         self.update_state()
