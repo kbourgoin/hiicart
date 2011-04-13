@@ -29,7 +29,7 @@ def format_exceptions(method):
             fmt = traceback.format_exc()
             log.error("Exception encountered: %s" % fmt)
             response = HttpResponse(fmt)
-            response.status_code=500 # Definitely _not_ a 200 resposne
+            response.status_code=500  # Definitely _not_ a 200 resposne
             return response
     return wrapper
 
