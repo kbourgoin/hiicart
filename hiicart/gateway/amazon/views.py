@@ -4,6 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadReque
 from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_view_exempt
 from hiicart.gateway.amazon.ipn import AmazonIPN
+from hiicart.gateway.base import GatewayError
 from hiicart.gateway.countries import COUNTRIES
 from hiicart.utils import format_exceptions, cart_by_uuid
 
