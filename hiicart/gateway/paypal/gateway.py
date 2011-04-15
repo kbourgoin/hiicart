@@ -163,9 +163,9 @@ class PaypalGateway(PaymentGatewayBase):
                     submit["a2"] = item.trial_price
                     submit["p2"] = item.trial_length
                     submit["t2"] = item.duration_unit
-            # else:
-                # Messes up trial periods, so only use if no trial/delay
-                # submit["modify"] = "1"  # new or modify subscription
+            else:
+                Messes up trial periods, so only use if no trial/delay
+                submit["modify"] = "1"  # new or modify subscription
             # subscription price
             submit["a3"] = item.recurring_price
             submit["p3"] = item.duration
