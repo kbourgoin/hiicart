@@ -142,7 +142,7 @@ class PaypalGateway(PaymentGatewayBase):
             submit["item_name"] = item.name
             submit["item_number"] = item.sku
             submit["no_note"] = NO_NOTE["YES"]
-            # submit["bn"] = "PP-SubscriptionsBF"
+            submit["bn"] = "PP-SubscriptionsBF"
             if item.trial and item.recurring_start:
                 raise GatewayError("PayPal can't have trial and delayed start")
             if item.recurring_start:
