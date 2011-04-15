@@ -61,7 +61,7 @@ class GoogleIPN(IPNBase):
         for item_id in item_ids:
             sku_key = "%s.merchant-item-id" % item_id
             if sku_key in data:
-                item = recurring_by_sku.get(data['sku_key'])
+                item = recurring_by_sku.get(data[sku_key])
                 items.append(item)
         for i in items:
             i.is_active = False
