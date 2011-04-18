@@ -38,6 +38,7 @@ def _find_cart(data):
 def ipn(request):
     """View to receive notifications from Google"""
     if request.method != "POST":
+        log.error('google ipn request not POSTed')
         return HttpResponseBadRequest("Requests must be POSTed")
     data = request.POST
     log.info("IPN Notification received from Google Checkout: %s" % data)
@@ -75,7 +76,7 @@ def ipn(request):
         elif type == "cancelled-subscription-notification":
             handler.cancelled_subscription(data)
         else:
-            raise GatewayError("google gateway: Unknown message type recieved: %s" % type)
+            log.error("google gateway: Unknown message type recieved: %s" % type)
     else:
         log.error('google gateway: Unknown tranaction, %s' % data)
     # Return ack so google knows we handled the message
