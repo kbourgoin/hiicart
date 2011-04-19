@@ -102,7 +102,7 @@ class PaypalGateway(PaymentGatewayBase):
         p7.write(out)
         return out.read()
 
-    def _get_form_data(self):
+    def _get_form_data(self, modify_existing_cart=False):
         """Creates a list of key,val to be sumbitted to PayPal."""
         submit = SortedDict()
         submit["business"] = self.settings["BUSINESS"]
@@ -163,9 +163,9 @@ class PaypalGateway(PaymentGatewayBase):
                     submit["a2"] = item.trial_price
                     submit["p2"] = item.trial_length
                     submit["t2"] = item.duration_unit
-            # else:
+            if modify_existing_cart:
                 # Messes up trial periods, so only use if no trial/delay
-                # submit["modify"] = "1"  # new or modify subscription
+                submit["modify"] = "1"  # new or modify subscription
             # subscription price
             submit["a3"] = item.recurring_price
             submit["p3"] = item.duration
@@ -223,10 +223,10 @@ class PaypalGateway(PaymentGatewayBase):
         """Nothing to fix here."""
         pass
 
-    def submit(self, collect_address=False, cart_settings_kwargs=None):
+    def submit(self, collect_address=False, cart_settings_kwargs=None, modify_existing_cart=False):
         """Submit a cart to the gateway. Returns a SubmitResult."""
         self._update_with_cart_settings(cart_settings_kwargs)
-        data = self._get_form_data()
+        data = self._get_form_data(modify_existing_cart)
         if self.settings["ENCRYPT"]:
             data = {"encrypted": self._encrypt_data(data)}
         return SubmitResult("form", form_data={"action": self.submit_url,
