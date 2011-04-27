@@ -66,7 +66,7 @@ class GoogleIPN(IPNBase):
         for i in items:
             i.is_active = False
             i.save()
-        cart.update_state()
+        self.cart.update_state()
 
     def charge_amount(self, data):
         """
