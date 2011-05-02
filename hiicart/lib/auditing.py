@@ -38,14 +38,15 @@ class FakeTraceback(object):
         er = ExceptionReporter(request, AuditingStacktrace, AuditingStacktrace(), self)
         return er.get_traceback_html()
 
-def log_with_stacktrace(message):
+def log_with_stacktrace(message, level=logging.INFO, logger='hiicart.audit'):
     client = get_client()
     if client is None:
         logger = logging.get_logger()
         logger.warn("Could not save stack trace for message: %s" % message)
         return
+    kwargs = dict(level=level, logger=logger)
     stack = inspect.stack()[1:]
     tb = FakeTraceback(stack)
     exc_info = (AuditingStacktrace, AuditingStacktrace(message), tb)
-    get_client().create_from_exception(exc_info)
+    get_client().create_from_exception(exc_info, **kwargs)
 
