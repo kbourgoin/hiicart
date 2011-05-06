@@ -99,11 +99,6 @@ class GoogleIPN(IPNBase):
         # TODO: Does not support different ship/bill name or email
         if not self.cart:
             return
-        payment = self._record_payment(data,
-                                       amount=data["order-total"],
-                                       state="PENDING")
-        if not payment:
-            return
         # Save buyer information if not already there
         if data.get("buyer-shipping-address.structured-name.first-name"):
             self.cart.ship_first_name = self.cart.ship_first_name or data['buyer-shipping-address.structured-name.first-name']
@@ -136,6 +131,9 @@ class GoogleIPN(IPNBase):
         self.cart.bill_postal_code = self.cart.bill_postal_code or data["buyer-billing-address.postal-code"]
         self.cart.bill_country = self.cart.bill_country or data["buyer-billing-address.country-code"]
         self.cart.save()
+        self._record_payment(data,
+                             amount=data["order-total"],
+                             state="PENDING")
 
     def order_state_change(self, data):
         """Handle an order-state-change notification"""
