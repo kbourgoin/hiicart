@@ -32,9 +32,6 @@ class PaypalIPN(IPNBase):
         if not self.cart:
             self.log.warn("Unable to find purchase for IPN.")
             return
-        payment = self._create_payment(data["mc_gross"], transaction_id, "PAID")
-        if data.get("note", False):
-            payment.notes.create(text="Comment via Paypal IPN: \n%s" % data["note"])
         # Fill in billing information. Consider any already in HiiCart correct
         self.cart.bill_email = self.cart.bill_email or data.get("payer_email", "")
         self.cart.ship_email = self.cart.ship_email or self.cart.bill_email
@@ -58,6 +55,9 @@ class PaypalIPN(IPNBase):
         self.cart.ship_country = self.cart.ship_country or self.cart.bill_country
         self.cart.update_state()
         self.cart.save()
+        payment = self._create_payment(data["mc_gross"], transaction_id, "PAID")
+        if data.get("note", False):
+            payment.notes.create(text="Comment via Paypal IPN: \n%s" % data["note"])
 
     def activate_subscription(self, data):
         """Send signal that a subscription has been activated."""
