@@ -1,10 +1,8 @@
 import unittest
 
-import hiicart.tests.comp as comp
-import hiicart.tests.google as google
-import hiicart.tests.hiicart as hiicart
+import comp, google, core, auditing
 
-__tests__ = [comp, google, hiicart]
+__tests__ = [comp, google, core, auditing]
 
 def suite():
     suite = unittest.TestSuite()

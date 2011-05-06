@@ -282,7 +282,7 @@ class HiiCartBase(models.Model):
         a mismatch between when an account can be charged.
         """
         gateway = self.get_gateway()
-        gateway.charge_recurring(self, grace_period)
+        gateway.charge_recurring(grace_period)
         self.update_state()
 
     def clone(self):
