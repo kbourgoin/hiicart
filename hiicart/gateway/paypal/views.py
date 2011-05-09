@@ -35,6 +35,10 @@ def ipn(request):
         return HttpResponse("Requests must be POSTed")
     data = request.POST
     log.info("IPN Notification received from Paypal: %s" % data)
+    try:
+        log.info("IPN Notification received from Paypal (raw): %s" % request.raw_post_data)
+    except:
+        pass
     # Verify the data with Paypal
     cart = _find_cart(data)
     if not cart:
