@@ -229,7 +229,7 @@ class HiiCartBase(models.Model):
     @property
     def total(self):
         """Current total, calculated from lineitems."""
-        return self.sub_total + (self.tax or 0) + (self.shipping or 0)
+        return sum([li.total or 0 for li in self.lineitems]) + (self.tax or 0) + (self.shipping or 0)
 
     def adjust_expiration(self, newdate):
         """
