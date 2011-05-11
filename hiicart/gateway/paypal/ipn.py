@@ -58,6 +58,7 @@ class PaypalIPN(IPNBase):
         payment = self._create_payment(data["mc_gross"], transaction_id, "PAID")
         if data.get("note", False):
             payment.notes.create(text="Comment via Paypal IPN: \n%s" % data["note"])
+        self.cart.update_state()
 
     def activate_subscription(self, data):
         """Send signal that a subscription has been activated."""
