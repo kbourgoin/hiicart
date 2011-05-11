@@ -9,3 +9,4 @@ dist
 temp
 example/exampledb
 *.swp
+tags

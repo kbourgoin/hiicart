@@ -229,7 +229,7 @@ class HiiCartBase(models.Model):
     @property
     def total(self):
         """Current total, calculated from lineitems."""
-        return self.sub_total + (self.tax or 0) + (self.shipping or 0)
+        return sum([li.total or 0 for li in self.lineitems]) + (self.tax or 0) + (self.shipping or 0)
 
     def adjust_expiration(self, newdate):
         """
@@ -282,7 +282,7 @@ class HiiCartBase(models.Model):
         a mismatch between when an account can be charged.
         """
         gateway = self.get_gateway()
-        gateway.charge_recurring(self, grace_period)
+        gateway.charge_recurring(grace_period)
         self.update_state()
 
     def clone(self):
