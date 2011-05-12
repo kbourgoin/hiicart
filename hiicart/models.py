@@ -84,8 +84,6 @@ class HiiCartMetaclass(models.base.ModelBase):
 
             attrs['cart_state_changed'] = Signal(providing_args=["cart", "new_state",
                                                                  "old_state"])
-            attrs['payment_state_changed'] = Signal(providing_args=["payment", "new_state",
-                                                                    "old_state"])
         except NameError:
             # This is HiiCartBase
             parents = False
@@ -565,7 +563,22 @@ class RecurringLineItem(RecurringLineItemBase):
     cart = models.ForeignKey(HiiCart, verbose_name="Cart")
 
 
+class PaymentMetaclass(models.base.ModelBase):
+    def __new__(cls, name, bases, attrs):
+        try:
+            parents = [b for b in bases if issubclass(b, PaymentBase)]
+            attrs['payment_state_changed'] = Signal(providing_args=["payment", "new_state",
+                                                                    "old_state"])
+        except NameError:
+            # This is PaymentBase
+            parents = False
+        new_class = super(PaymentMetaclass, cls).__new__(cls, name, bases, attrs)
+        return new_class
+
+
 class PaymentBase(models.Model):
+    __metaclass__ = PaymentMetaclass
+
     amount = models.DecimalField("amount", max_digits=18, decimal_places=2)
     gateway = models.CharField("Payment Gateway", max_length=25, blank=True)
     notes = generic.GenericRelation("Note")
@@ -590,6 +603,15 @@ class PaymentBase(models.Model):
                                        self.state, self.created)
         else:
             return u"(unsaved) $%s %s" % (self.amount, self.state)
+
+    def save(self, *args, **kwargs):
+        super(PaymentBase, self).save(*args, **kwargs)
+        # Signal sent after save in case someone queries database
+        if self.state != self._old_state:
+            self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
+                                            old_state=self._old_state,
+                                            new_state=self.state)
+            self._old_state = self.state
 
 
 @HiiCartBase.set_payment_class
