@@ -7,7 +7,6 @@ from hiicart.gateway.base import IPNBase
 
 _FPS_NS = "{http://fps.amazonaws.com/doc/2008-09-17/}"
 
-
 class AmazonIPN(IPNBase):
     """Payment Gateway for Amazon Payments."""
 
@@ -87,13 +86,17 @@ class AmazonIPN(IPNBase):
         self._update_with_store_settings()
         if caller_reference is None:
             caller_reference = self.cart.cart_uuid
+
+        self.log.debug("Doing FPS: %s" % token)
         response = fps.do_fps("Pay", "GET", self.settings,
-                   **{"CallerReference" : caller_reference,
-                      "SenderTokenId" : token,
-                      "TransactionAmount.CurrencyCode" : "USD",
-                      "TransactionAmount.Value" : self.cart.total})
+                              CallerReference=caller_reference,
+                              SenderTokenId=token,
+                              **{"TransactionAmount.CurrencyCode": "USD",
+                                 "TransactionAmount.Value": self.cart.total})
         xml = ET.XML(response)
+        self.log.debug("FPS response: %s" % xml)
         status = xml.find(".//%sTransactionStatus" % _FPS_NS)
+        self.log.debug("FPS status: %s" % status)
         if status is None:
             error = self._process_error(response)
             if not error:
@@ -112,6 +115,7 @@ class AmazonIPN(IPNBase):
         else:
             # This work for pending payments?
             transaction_id = xml.find(".//%sTransactionId" % _FPS_NS).text
+            self.log.debug('FPS trans id: %s' % transaction_id)
             if status.text == "Pending":
                 self._create_payment(self.cart.total, transaction_id, "PENDING")
             elif status.text == "Success":
