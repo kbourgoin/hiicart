@@ -70,7 +70,9 @@ def cbui(request, settings=None):
         else:
             handler.begin_recurring()
     else:
+        log.debug("Making pay request: %s" % request.GET['tokenID'])
         result = handler.make_pay_request(request.GET["tokenID"])
+        log.debug("Pay request result: %s" % result)
     if 'RETURN_URL' in handler.settings:
         return HttpResponseRedirect(handler.settings['RETURN_URL'])
     return HttpResponseRedirect("/")
