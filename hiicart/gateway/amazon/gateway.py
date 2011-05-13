@@ -51,7 +51,7 @@ class AmazonGateway(PaymentGatewayBase):
                 values["validityStart"] = recurring.recurring_start.strftime('%s')
         # Optional Fields
         if self.settings["CBUI_WEBSITE_DESC"]:
-            values["websiteDescription"] = self.settings["CBUI_WEBSITE_DESC"]
+            values["websiteDescription"] = unicode(self.settings["CBUI_WEBSITE_DESC"]).encode('utf-8')
         methods = self._get_payment_methods()
         if methods:
             values["paymentMethod"] = methods
