@@ -54,10 +54,13 @@ class PaypalIPN(IPNBase):
         self.cart.bill_country = self.cart.bill_country or data.get("address_country_code", "")
         self.cart.ship_country = self.cart.ship_country or self.cart.bill_country
         self.cart.save()
-        payment = self._create_payment(data["mc_gross"], transaction_id, "PAID")
+        payment = self._create_payment(data["mc_gross"], transaction_id, "PENDING")
+        payment.state = "PAID" # Ensure proper state transitions
+        payment.save()
         if data.get("note", False):
             payment.notes.create(text="Comment via Paypal IPN: \n%s" % data["note"])
         self.cart.update_state()
+        self.cart.save()
 
     def activate_subscription(self, data):
         """Send signal that a subscription has been activated."""
@@ -74,6 +77,7 @@ class PaypalIPN(IPNBase):
             item.is_active = True
             item.save()
             self.cart.update_state()
+            self.cart.save()
 
     def cancel_subscription(self, data):
         """Send signal that a subscription has been cancelled."""
@@ -87,6 +91,7 @@ class PaypalIPN(IPNBase):
             item.is_active = False
             item.save()
             self.cart.update_state()
+            self.cart.save()
 
     def confirm_ipn_data(self, raw_data):
         """Confirm IPN data using string raw post data.
