@@ -606,7 +606,7 @@ class PaymentBase(models.Model):
 
     def save(self, *args, **kwargs):
         super(PaymentBase, self).save(*args, **kwargs)
-        log.info('Payment saved %s => %s for payment_id: %s' % (self.old_state, self.state, self.id))
+        log.info('Payment saved %s => %s for payment_id: %s' % (self._old_state, self.state, self.id))
         # Signal sent after save in case someone queries database
         if self.state != self._old_state:
             self.payment_state_changed.send(sender=self.__class__.__name__, payment=self,
