@@ -112,6 +112,7 @@ class HiiCartBase(models.Model):
     success_url = models.URLField(null=True)
     # Total fields
     # sub_total and total are '_' so we can recalculate them on the fly
+    discount = models.DecimalField("Discount", max_digits=18, decimal_places=2, blank=True, null=True)
     _sub_total = models.DecimalField("Subtotal", max_digits=18, decimal_places=2, blank=True, null=True)
     _total = models.DecimalField("Total", max_digits=18, decimal_places=2)
     tax = models.DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
