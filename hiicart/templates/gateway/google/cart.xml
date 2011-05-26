@@ -58,7 +58,7 @@
          <item-name>Coupon</item-name>
          <item-description>You saved some money!</item-description>
          <quantity>1</quantity>
-         <unit-price currency="{{ currency }}">-{{ lineitem.unit_price|floatformat:2 }}</unit-price>
+         <unit-price currency="{{ currency }}">-{{ cart.discount|floatformat:2 }}</unit-price>
       </item>
       {% endif %}
     </items>
