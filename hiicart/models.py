@@ -78,9 +78,9 @@ class HiiCartMetaclass(models.base.ModelBase):
     def __new__(cls, name, bases, attrs):
         try:
             parents = [b for b in bases if issubclass(b, HiiCartBase)]
-            attrs['lineitem_types'] = []
-            attrs['recurring_lineitem_types'] = []
-            attrs['one_time_lineitem_types'] = []
+            attrs['lineitem_types'] = set()
+            attrs['recurring_lineitem_types'] = set()
+            attrs['one_time_lineitem_types'] = set()
 
             attrs['cart_state_changed'] = Signal(providing_args=["cart", "new_state",
                                                                  "old_state"])
@@ -164,11 +164,11 @@ class HiiCartBase(models.Model):
     @classmethod
     def register_lineitem_type(cart_class, recurring=False):
         def register_decorator(cls):
-            cart_class.lineitem_types.append(cls)
+            cart_class.lineitem_types.add(cls)
             if recurring:
-                cart_class.recurring_lineitem_types.append(cls)
+                cart_class.recurring_lineitem_types.add(cls)
             else:
-                cart_class.one_time_lineitem_types.append(cls)
+                cart_class.one_time_lineitem_types.add(cls)
             return cls
         return register_decorator
 
