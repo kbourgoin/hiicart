@@ -78,9 +78,9 @@ class HiiCartMetaclass(models.base.ModelBase):
     def __new__(cls, name, bases, attrs):
         try:
             parents = [b for b in bases if issubclass(b, HiiCartBase)]
-            attrs['lineitem_types'] = []
-            attrs['recurring_lineitem_types'] = []
-            attrs['one_time_lineitem_types'] = []
+            attrs['lineitem_types'] = set()
+            attrs['recurring_lineitem_types'] = set()
+            attrs['one_time_lineitem_types'] = set()
 
             attrs['cart_state_changed'] = Signal(providing_args=["cart", "new_state",
                                                                  "old_state"])
@@ -112,6 +112,7 @@ class HiiCartBase(models.Model):
     success_url = models.URLField(null=True)
     # Total fields
     # sub_total and total are '_' so we can recalculate them on the fly
+    discount = models.DecimalField("Discount", max_digits=18, decimal_places=2, blank=True, null=True)
     _sub_total = models.DecimalField("Subtotal", max_digits=18, decimal_places=2, blank=True, null=True)
     _total = models.DecimalField("Total", max_digits=18, decimal_places=2)
     tax = models.DecimalField("Tax", max_digits=18, decimal_places=2, blank=True, null=True)
@@ -142,6 +143,8 @@ class HiiCartBase(models.Model):
     bill_postal_code = models.CharField("Zip Code", max_length=30, default="")
     bill_country = models.CharField("Country", max_length=2, default="")
     thankyou = models.CharField("Thank you message.", max_length=255, blank=True, null=True, default=None)
+    fulfilled = models.BooleanField(default=False)
+    custom_id = models.CharField(max_length=255, blank=True, null=True, default=None)
     created = models.DateTimeField("Created", auto_now_add=True)
     last_updated = models.DateTimeField("Last Updated", auto_now=True)
 
@@ -163,11 +166,11 @@ class HiiCartBase(models.Model):
     @classmethod
     def register_lineitem_type(cart_class, recurring=False):
         def register_decorator(cls):
-            cart_class.lineitem_types.append(cls)
+            cart_class.lineitem_types.add(cls)
             if recurring:
-                cart_class.recurring_lineitem_types.append(cls)
+                cart_class.recurring_lineitem_types.add(cls)
             else:
-                cart_class.one_time_lineitem_types.append(cls)
+                cart_class.one_time_lineitem_types.add(cls)
             return cls
         return register_decorator
 
@@ -227,7 +230,7 @@ class HiiCartBase(models.Model):
     @property
     def total(self):
         """Current total, calculated from lineitems."""
-        return sum([li.total or 0 for li in self.lineitems]) + (self.tax or 0) + (self.shipping or 0)
+        return sum([li.total or 0 for li in self.lineitems]) + (self.tax or 0) + (self.shipping or 0) - (self.discount or 0)
 
     def adjust_expiration(self, newdate):
         """

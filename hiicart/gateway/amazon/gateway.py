@@ -1,4 +1,4 @@
-"""Amazon Payments Gateway"""
+"Amazon Payments Gateway"
 
 import urllib
 from datetime import datetime
@@ -14,7 +14,7 @@ TEST_CBUI_URL = "https://authorize.payments-sandbox.amazon.com/cobranded-ui/acti
 
 
 class AmazonGateway(PaymentGatewayBase):
-    """Payment Gateway for Amazon Payments."""
+    "Payment Gateway for Amazon Payments."
 
     def __init__(self, cart):
         super(AmazonGateway, self).__init__("amazon", cart, default_settings)
@@ -29,7 +29,7 @@ class AmazonGateway(PaymentGatewayBase):
         return url
 
     def _get_cbui_values(self, collect_address=False):
-        """Get the key/values to be used in a co-branded UI request."""
+        "Get the key/values to be used in a co-branded UI request."
         values = {"callerKey" : self.settings["AWS_KEY"],
                   "CallerReference" : self.cart.cart_uuid,
                   "SignatureMethod" : "HmacSHA256",
@@ -68,12 +68,12 @@ class AmazonGateway(PaymentGatewayBase):
         return ",".join(methods)
 
     def _is_valid(self):
-        """Return True if gateway is valid."""
+        "Return True if gateway is valid."
         #TODO: Query Amazon to validate credentials
         return True
 
     def cancel_recurring(self):
-        """Cancel recurring lineitem."""
+        "Cancel recurring lineitem."
         if len(self.cart.recurring_lineitems) == 0:
             return
         item = self.cart.recurring_lineitems[0]
@@ -106,11 +106,11 @@ class AmazonGateway(PaymentGatewayBase):
             item.save()
 
     def sanitize_clone(self):
-        """Nothing to do here..."""
+        "Nothing to do here..."
         return self.cart
 
     def submit(self, collect_address=False, cart_settings_kwargs=None):
-        """Submit the cart to Amazon's Co-Branded UI (CBUI)"""
+        "Submit the cart to Amazon's Co-Branded UI (CBUI)"
         self._update_with_cart_settings(cart_settings_kwargs)
         values = self._get_cbui_values(collect_address)
         values["Signature"] = fps.generate_signature("GET", values,

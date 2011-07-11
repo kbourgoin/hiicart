@@ -129,6 +129,8 @@ class PaypalGateway(PaymentGatewayBase):
             submit["no_shipping"] = NO_SHIPPING["YES"]
         submit["handling_cart"] = self.cart.shipping
         submit["tax_cart"] = self.cart.tax
+        if self.cart.discount:
+            submit['discount_amount_cart'] = self.cart.discount
         # Locale
         submit["lc"] = self.settings["LOCALE"]
         submit["invoice"] = self.cart.cart_uuid
@@ -143,6 +145,8 @@ class PaypalGateway(PaymentGatewayBase):
             submit["item_number"] = item.sku
             submit["no_note"] = NO_NOTE["YES"]
             submit["bn"] = "PP-SubscriptionsBF"
+            if item.discount:
+                submit['discount_amount'] = self.cart.discount
             if item.trial and item.recurring_start:
                 raise GatewayError("PayPal can't have trial and delayed start")
             if item.recurring_start:
@@ -186,6 +190,8 @@ class PaypalGateway(PaymentGatewayBase):
                 submit["quantity_%i" % ix] = item.quantity
                 submit["on0_%i" % ix] = "SKU"
                 submit["os0_%i" % ix] = item.sku
+                if item.discount:
+                    submit['discount_amount_' + ix] = self.cart.discount
                 ix += 1
         if self.cart.bill_street1:
             submit["first_name"] = self.cart.bill_first_name
