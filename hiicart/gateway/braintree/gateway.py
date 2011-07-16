@@ -25,9 +25,12 @@ class BraintreeGateway(PaymentGatewayBase):
         else:
             return braintree.Environment.Sandbox
 
+    def store_return_url(self, request):
+        self._update_with_cart_settings({"request": request})
+        return self.settings["RETURN_URL"]
+
     def submit(self, collect_address=False, cart_settings_kwargs=None):
         """Submit a cart to Braintree."""
-        #self._update_with_cart_settings(cart_settings_kwargs)
         braintree.Configuration.configure(self.environment, 
                                           self.settings["MERCHANT_ID"], 
                                           self.settings["MERCHANT_KEY"],
@@ -38,6 +41,6 @@ class BraintreeGateway(PaymentGatewayBase):
                             "order_id": self.cart.cart_uuid,
                             "amount": self.cart.total,
                             "options": {"submit_for_settlement": True}}}, 
-            "http://goodsie.local:8001")
+            "%s/%s" % (self.settings["PAYMENT_URL"], self.cart.cart_uuid))
         return SubmitResult("direct", form_data={"action": submit_url, 
                                                  "fields": {"tr_data": tr_data}})
