@@ -158,7 +158,7 @@ class SubmitResult(object):
         if url and form_data:
             raise GatewayError("Gateway returned url AND form data.")
         self.url = url
-        if type == "form":
+        if type == "form" or type == "direct":
             self.form_action = form_data["action"]
             self.form_fields = form_data["fields"]
         else:
