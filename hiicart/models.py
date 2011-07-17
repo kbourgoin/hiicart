@@ -369,8 +369,11 @@ class HiiCartBase(models.Model):
         """Submit this cart to a payment gateway."""
         gateway = self._get_gateway(gateway_name)
         self.gateway = gateway_name
-        self.set_state("SUBMITTED")
-        return gateway.submit(collect_address, cart_settings_kwargs)
+        self.save()
+        result = gateway.submit(collect_address, cart_settings_kwargs)
+        if result.type is not "direct":
+            self.set_state("SUBMITTED")
+        return result
 
     def update_state(self):
         """

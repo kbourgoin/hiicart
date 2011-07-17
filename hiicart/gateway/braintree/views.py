@@ -13,26 +13,23 @@ from hiicart.utils import format_exceptions, call_func, cart_by_uuid
 log = logging.getLogger("hiicart.gateway.braintree")
 
 
-def _find_cart(result):
-    """Find purchase using the Braintree result"""
-    if result.transaction.order_id:
-        return cart_by_uuid(result.transaction.order_id)
-
-    log.error("Could not find order ID in Braintree result: %s" % str(data.items()))
-    return None
-
-
 @csrf_view_exempt
 @format_exceptions
 @never_cache
-def payment(request, cart_uuid):
+def payment(request):
     """View to receive payment result from Braintree"""
     data = request.META["QUERY_STRING"]
     log.info("Payment result received from Braintree: %s" % data)
-    cart = cart_by_uuid(cart_uuid)
+    result = braintree.TransparentRedirect.confirm(data)
+    cart = cart_by_uuid(result.transaction.order_id)
     if cart:
         gateway = BraintreeGateway(cart)
-        handler = BraintreeIPN(cart)
-        handler.confirm_payment(data)
+        if result.is_success:
+            handler = BraintreeIPN(cart)
+            created = handler.create_payment(result.transaction)
+            if created:
+                return redirect(gateway.store_return_url(request))
+        # On failure, redirect back to the payment form
         return redirect(gateway.store_return_url(request))
-    
+    # If we couldn't find a cart, something went horribly wrong
+    log.error("Could not find cart associated with payment (%s, " % (result.transaction.id, result.transaction.order_id))

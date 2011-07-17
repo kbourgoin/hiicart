@@ -23,25 +23,46 @@ class BraintreeIPN(IPNBase):
             except:
                 pass
 
-    def _record_payment(self, transaction):
+    def _record_payment(self, amount, id, state="PENDING"):
         """Record a payment from the IPN data."""
         if not self.cart:
             return
-        if transaction.order_id != self.cart.cart_uuid:
-            log.error("Cart uuid mismatch from Braintree payment result: " % str(data.items()))
-            state = "FAILED"
-        elif transaction.status == "submitted_for_settlement" \
-            or transaction.status == "settled" or transaction.status == "authorized":
-            state = "PAID"
-        elif transaction.status == "authorizing":
-            state = "PENDING"
-        else:
-            state = "FAILED"
-        payment = self._create_payment(transaction.amount, transaction.id, state)
+        payment = self._create_payment(amount, id, state)
         payment.save()
         return payment
 
-    def confirm_payment(self, data):
-        # Send payment confirmation
-        result = braintree.TransparentRedirect.confirm(data)
-        payment = self._record_payment(result.transaction)
+    def create_payment(self, transaction):
+        """Create a new payment record."""
+        if not self.cart:
+            return
+        if transaction.status == "settled" or transaction.status == "authorized":
+            state = "PAID"
+        elif transaction.status == "authorizing" or transaction.status == "submitted_for_settlement":
+            state = "PENDING"
+        else:
+            return False
+        payment = self._record_payment(transaction.amount, transaction.id, state)
+        return True
+
+    def new_order(self, transaction):
+        """Save a new order."""
+        if not self.cart:
+            return
+        self.cart.ship_first_name = transaction.shipping["first_name"]
+        self.cart.ship_last_name = transaction.shipping["last_name"]
+        self.cart.ship_street1 = transaction.shipping["street_address"]
+        self.cart.ship_street2 = transaction.shipping["extended_address"]
+        self.cart.ship_city = transaction.shipping["locality"]
+        self.cart.ship_state = transaction.shipping["region"]
+        self.cart.ship_postal_code = transaction.shipping["postal_code"]
+        self.cart.ship_country = transaction.shipping["country_code_alpha2"]
+        self.cart.bill_first_name = transaction.billing["first_name"]
+        self.cart.bill_last_name = transaction.billing["last_name"]
+        self.cart.bill_street1 = transaction.billing["street_address"]
+        self.cart.bill_street2 = transaction.billing["extended_address"]
+        self.cart.bill_city = transaction.billing["locality"]
+        self.cart.bill_state = transaction.billing["region"]
+        self.cart.bill_postal_code = transaction.billing["postal_code"]
+        self.cart.bill_country = transaction.billing["country_code_alpha2"]
+        self.cart.save()
+        self.create_payment(transaction)
