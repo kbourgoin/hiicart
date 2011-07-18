@@ -48,21 +48,22 @@ class BraintreeIPN(IPNBase):
         """Save a new order."""
         if not self.cart:
             return
-        self.cart.ship_first_name = transaction.shipping["first_name"]
-        self.cart.ship_last_name = transaction.shipping["last_name"]
-        self.cart.ship_street1 = transaction.shipping["street_address"]
-        self.cart.ship_street2 = transaction.shipping["extended_address"]
-        self.cart.ship_city = transaction.shipping["locality"]
-        self.cart.ship_state = transaction.shipping["region"]
-        self.cart.ship_postal_code = transaction.shipping["postal_code"]
-        self.cart.ship_country = transaction.shipping["country_code_alpha2"]
-        self.cart.bill_first_name = transaction.billing["first_name"]
-        self.cart.bill_last_name = transaction.billing["last_name"]
-        self.cart.bill_street1 = transaction.billing["street_address"]
-        self.cart.bill_street2 = transaction.billing["extended_address"]
-        self.cart.bill_city = transaction.billing["locality"]
-        self.cart.bill_state = transaction.billing["region"]
-        self.cart.bill_postal_code = transaction.billing["postal_code"]
-        self.cart.bill_country = transaction.billing["country_code_alpha2"]
+        self.cart.ship_first_name = transaction.shipping["first_name"] or self.cart.ship_first_name
+        self.cart.ship_last_name = transaction.shipping["last_name"] or self.cart.ship_last_name
+        self.cart.ship_street1 = transaction.shipping["street_address"] or self.cart.ship_street1
+        self.cart.ship_street2 = transaction.shipping["extended_address"] or self.cart.ship_street2
+        self.cart.ship_city = transaction.shipping["locality"] or self.cart.ship_city
+        self.cart.ship_state = transaction.shipping["region"] or self.cart.ship_state
+        self.cart.ship_postal_code = transaction.shipping["postal_code"] or self.cart.ship_postal_code
+        self.cart.ship_country = transaction.shipping["country_code_alpha2"] or self.cart.ship_country
+        self.cart.bill_first_name = transaction.billing["first_name"] or self.cart.bill_first_name
+        self.cart.bill_last_name = transaction.billing["last_name"] or self.cart.bill_last_name
+        self.cart.bill_street1 = transaction.billing["street_address"] or self.cart.bill_street1
+        self.cart.bill_street2 = transaction.billing["extended_address"] or self.cart.bill_street2
+        self.cart.bill_city = transaction.billing["locality"] or self.cart.bill_city
+        self.cart.bill_state = transaction.billing["region"] or self.cart.bill_state
+        self.cart.bill_postal_code = transaction.billing["postal_code"] or self.cart.bill_postal_code
+        self.cart.bill_country = transaction.billing["country_code_alpha2"] or self.cart.bill_country
+        self.cart._cart_state = "SUBMITTED"
         self.cart.save()
         self.create_payment(transaction)

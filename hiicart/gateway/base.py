@@ -147,10 +147,12 @@ class CancelResult(object):
 class SubmitResult(object):
     """
     The result of a submit operation.
-    Currently supported result types are url, form, and None.
+    Currently supported result types are url, form, direct, and None.
 
     url: The user should to be redirected to result.url.
     form: form_action is the target url; form_fields is a dict of form data.
+    direct: form_action is the form target; form_fields is a dict of hidden form
+            required by the gateway.
     None: type is set to None if no further action is required.
     """
     def __init__(self, type, url=None, form_data=None):
@@ -164,3 +166,14 @@ class SubmitResult(object):
         else:
             self.form_action = None
             self.form_fields = None
+
+
+class PaymentResult(object):
+    """
+    Result for a payment confirmation.
+    Currently only supported with direct payment gateways.
+    """
+    def __init__(self, success, status, errors=None):
+        self.success = success
+        self.status = status
+        self.errors = errors
