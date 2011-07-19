@@ -29,13 +29,13 @@ class GoogleIPN(IPNBase):
         if not amount:
             amount = data["latest-charge-amount"]
         transaction_id = data["google-order-number"]
-        pending = self.cart.payments.filter(state="PENDING", transaction_id=transaction_id)
+        pending = self.cart.payments.filter(state="PENDING", transaction_id=transaction.id)
         if pending:
             pending[0].state = "PAID"
             pending[0].save()
             return pending[0]
         else:
-            payment = self._create_payment(amount, transaction_id, state)
+            payment = self._create_payment(amount, transaction.id, state)
             payment.save()
             return payment
 

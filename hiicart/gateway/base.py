@@ -173,7 +173,8 @@ class PaymentResult(object):
     Result for a payment confirmation.
     Currently only supported with direct payment gateways.
     """
-    def __init__(self, success, status, errors=None):
+    def __init__(self, transaction_id, success, status, errors=None):
+        self.transaction_id = transaction_id
         self.success = success
         self.status = status
         self.errors = errors

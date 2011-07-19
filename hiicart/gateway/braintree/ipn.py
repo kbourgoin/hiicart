@@ -12,26 +12,19 @@ class BraintreeIPN(IPNBase):
     def __init__(self, cart):
         super(BraintreeIPN, self).__init__("braintree", cart, default_settings)
         self._require_settings(["MERCHANT_ID", "MERCHANT_KEY", "MERCHANT_PRIVATE_KEY"])
+        braintree.Configuration.configure(self.environment, 
+                                          self.settings["MERCHANT_ID"], 
+                                          self.settings["MERCHANT_KEY"],
+                                          self.settings["MERCHANT_PRIVATE_KEY"])
 
-    @staticmethod
-    def _find_payment(data):
-        """Find a payment based on the google id"""
-        transaction_id = data["google-order-number"]
-        for Cart in CART_TYPES:
-            try:
-                return Cart.payment_class.objects.select_related('cart').get(transaction_id=transaction_id)
-            except:
-                pass
+    @property
+    def environment(self):
+        if self.settings["LIVE"]:
+            return braintree.Environment.Production
+        else:
+            return braintree.Environment.Sandbox
 
-    def _record_payment(self, amount, id, state="PENDING"):
-        """Record a payment from the IPN data."""
-        if not self.cart:
-            return
-        payment = self._create_payment(amount, id, state)
-        payment.save()
-        return payment
-
-    def create_payment(self, transaction):
+    def _record_payment(self, transaction):
         """Create a new payment record."""
         if not self.cart:
             return
@@ -40,9 +33,16 @@ class BraintreeIPN(IPNBase):
         elif transaction.status == "authorizing" or transaction.status == "submitted_for_settlement":
             state = "PENDING"
         else:
-            return False
-        payment = self._record_payment(transaction.amount, transaction.id, state)
-        return True
+            return
+        pending = self.cart.payments.filter(state="PENDING", transaction_id=transaction.id)
+        if pending:
+            pending[0].state = state
+            pending[0].save()
+            return pending[0]
+        else:
+            payment = self._create_payment(transaction.amount, transaction.id, state)
+            payment.save()
+            return payment
 
     def new_order(self, transaction):
         """Save a new order."""
@@ -66,4 +66,22 @@ class BraintreeIPN(IPNBase):
         self.cart.bill_country = transaction.billing["country_code_alpha2"] or self.cart.bill_country
         self.cart._cart_state = "SUBMITTED"
         self.cart.save()
-        self.create_payment(transaction)
+        self._record_payment(transaction)
+
+    def update_order_status(self, transaction_id):
+        """
+        Check the state of a Braintree transaction and update the order.
+
+        Return True if the payment has Settled, or False otherwise.
+        """
+        transaction = braintree.Transaction.find(transaction_id)
+        # Force settlement on dev
+        if not self.settings["LIVE"]:
+            transaction.status = u"settled"
+        if transaction:
+            payment = self._record_payment(transaction)
+            if payment.state == "PAID":
+                self.cart.set_state("COMPLETED")
+                self.cart._cart_state
+                return True
+        return False

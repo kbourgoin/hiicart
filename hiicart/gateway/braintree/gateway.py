@@ -60,22 +60,26 @@ class BraintreeGateway(PaymentGatewayBase):
             result = braintree.TransparentRedirect.confirm(request.META['QUERY_STRING'])
         except Exception, e:
             errors = {'non_field_errors': 'Request to payment gateway failed.'}
-            return PaymentResult(success=False, status=None, errors=errors)\
+            return PaymentResult(transaction_id=None, success=False, status=None, errors=errors)\
         
         if result.is_success:
             handler = BraintreeIPN(self.cart)
             created = handler.new_order(result.transaction)
             if created:
-                return PaymentResult(success=True, status=result.transaction.status)
+                return PaymentResult(transaction_id=result.transaction.id, 
+                                     success=True, status=result.transaction.status)
         errors = {}
         if not result.transaction:
+            transaction_id = None
             status = None
             for error in result.errors.deep_errors:
                 errors[error.attribute] = error.message
         else:
+            transaction_id = result.transaction.id
             status = result.transaction.status
             if result.transaction.status == "processor_declined":
                 errors = {'non_field_errors': result.transaction.processor_response_text}
             elif result.transaction.status == "gateway_rejected":
                 errors = {'non_field_errors': result.transaction.gateway_rejection_reason}
-        return PaymentResult(success=False, status=status, errors=errors)
+        return PaymentResult(transaction_id=transaction_id, success=False, 
+                             status=status, errors=errors)
