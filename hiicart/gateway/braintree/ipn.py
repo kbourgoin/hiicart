@@ -1,9 +1,16 @@
 import braintree
 from datetime import datetime
 from decimal import Decimal
-from hiicart.gateway.base import IPNBase
+from hiicart.gateway.base import IPNBase, PaymentResult
 from hiicart.gateway.braintree.settings import SETTINGS as default_settings
 from hiicart.models import CART_TYPES
+
+BRAINTREE_STATUS = {"PAID": ["settled"],
+                    "PENDING": ["authorized", "authorizing",
+                                "submitted_for_settlement"],
+                    "FAILED": ["failed", "gateway_rejected", 
+                               "processor_declined", "settlement_failed"],
+                    "CANCELLED": ["voided"]}
 
 
 class BraintreeIPN(IPNBase):
@@ -29,17 +36,21 @@ class BraintreeIPN(IPNBase):
         """Create a new payment record."""
         if not self.cart:
             return
-        if transaction.status == "settled" or transaction.status == "authorized":
+        if transaction.status in BRAINTREE_STATUS["PAID"]:
             state = "PAID"
-        elif transaction.status == "authorizing" or transaction.status == "submitted_for_settlement":
+        elif transaction.status in BRAINTREE_STATUS["PENDING"]:
             state = "PENDING"
+        elif transaction.status in BRAINTREE_STATUS["FAILED"]:
+            state = "FAILED"
+        elif transaction.status in BRAINTREE_STATUS["CANCELLED"]:
+            state = "CANCELLED"
         else:
             return
-        pending = self.cart.payments.filter(state="PENDING", transaction_id=transaction.id)
-        if pending:
-            pending[0].state = state
-            pending[0].save()
-            return pending[0]
+        payment = self.cart.payments.filter(transaction_id=transaction.id)
+        if payment:
+            payment[0].state = state
+            payment[0].save()
+            return payment[0]
         else:
             payment = self._create_payment(transaction.amount, transaction.id, state)
             payment.save()
@@ -73,7 +84,8 @@ class BraintreeIPN(IPNBase):
         """
         Check the state of a Braintree transaction and update the order.
 
-        Return True if the payment has Settled, or False otherwise.
+        Return True if the payment has Settled or Failed, or False if it is
+        still pending.
 
         In development, it will force the payment status to 'settled'.
         """
@@ -83,9 +95,12 @@ class BraintreeIPN(IPNBase):
             transaction.status = u"settled"
         if transaction:
             payment = self._record_payment(transaction)
-            if payment.state == "PAID":
-                self.cart.set_state("COMPLETED")
-                self.cart._cart_state
-                return True
+            if payment:
+                if payment.state == "PAID":
+                    self.cart.set_state("COMPLETED")
+                elif payment.state == "CANCELLED":
+                    self.cart.set_state("CANCELLED")
+                
+                return payment.state != "PENDING"
         return False
         
