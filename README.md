@@ -2,7 +2,7 @@ HiiCart - Django Shopping Cart
 ===============================
 
 A simple shopping cart implementation with support for PayPal,
-Google Checkout, and Amazon Payments.
+Google Checkout, Amazon Payments, and Braintree.
 
 
 Installation and Setup

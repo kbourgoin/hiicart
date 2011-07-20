@@ -26,26 +26,25 @@ class BraintreeGateway(PaymentGatewayBase):
 
     @property
     def environment(self):
+        """Determine which Braintree environment to use."""
         if self.settings["LIVE"]:
             return braintree.Environment.Production
         else:
             return braintree.Environment.Sandbox
 
-    def store_return_url(self, request):
-        self._update_with_cart_settings({"request": request})
-        return self.settings["RETURN_URL"]
-
     def submit(self, collect_address=False, cart_settings_kwargs=None, submit=False):
-        """Submits a transaction to Braintree."""
+        """
+        Simply returns the gateway type to let the frontend know how to proceed.
+        """
         return SubmitResult("direct")
 
     @property
     def form(self):
-        """Return the payment form for the Braintree gateway."""
+        """Returns an instance of PaymentForm."""
         return PaymentForm()
 
     def start_transaction(self, request):
-        """Submits transaction details to Braintree and gets form data."""
+        """Submits transaction details to Braintree and returns form data."""
         tr_data = braintree.Transaction.tr_data_for_sale({
             "transaction": {"type": "sale",
                             "order_id": self.cart.cart_uuid,
@@ -55,7 +54,13 @@ class BraintreeGateway(PaymentGatewayBase):
         return tr_data
 
     def confirm_payment(self, request):
-        """Confirms payment with Braintree."""
+        """
+        Confirms payment result with Braintree.
+
+        This method should be called after the Braintree transaction redirect
+        to determine the payment result. It expects the request to contain the
+        query string coming back from Braintree.
+        """
         try:
             result = braintree.TransparentRedirect.confirm(request.META['QUERY_STRING'])
         except Exception, e:

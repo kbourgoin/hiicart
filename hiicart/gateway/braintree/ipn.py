@@ -19,6 +19,7 @@ class BraintreeIPN(IPNBase):
 
     @property
     def environment(self):
+        """Determine which Braintree environment to use."""
         if self.settings["LIVE"]:
             return braintree.Environment.Production
         else:
@@ -45,7 +46,7 @@ class BraintreeIPN(IPNBase):
             return payment
 
     def new_order(self, transaction):
-        """Save a new order."""
+        """Save a new order using details from a transaction."""
         if not self.cart:
             return
         self.cart.ship_first_name = transaction.shipping["first_name"] or self.cart.ship_first_name
@@ -73,6 +74,8 @@ class BraintreeIPN(IPNBase):
         Check the state of a Braintree transaction and update the order.
 
         Return True if the payment has Settled, or False otherwise.
+
+        In development, it will force the payment status to 'settled'.
         """
         transaction = braintree.Transaction.find(transaction_id)
         # Force settlement on dev
@@ -85,3 +88,4 @@ class BraintreeIPN(IPNBase):
                 self.cart._cart_state
                 return True
         return False
+        

@@ -1,18 +1,29 @@
 import braintree
 
+from datetime import datetime
 from django import forms
 from django.forms.util import ErrorDict
+
+EXPIRATION_MONTH_CHOICES = [(i, "%02d" % i) for i in range(1,13)]
+EXPIRATION_YEAR_CHOICES = range(datetime.now().year, datetime.now().year+10)
 
 class PaymentForm(forms.Form):
 	"""
 	Braintree payment form.
+
+	Before displaying the form, make sure to call set_transaction with the 
+	result of BraintreeGateway.start_transaction to set required transaction 
+	fields.
+
+	To validate, pass the result of BraintreeGateway.confirm_payment to 
+	set_result. This will set any errors to the appropriate field.
 	"""
 	tr_data = forms.CharField(widget=forms.HiddenInput)
 	transaction__credit_card__cardholder_name = forms.CharField()
 	transaction__credit_card__number = forms.CharField()
 	transaction__credit_card__cvv = forms.CharField(min_length=3, max_length=4)
-	transaction__credit_card__expiration_month = forms.CharField(min_length=1, max_length=2)
-	transaction__credit_card__expiration_year = forms.CharField(min_length=4, max_length=4)
+	transaction__credit_card__expiration_month = forms.ChoiceField(choices=EXPIRATION_MONTH_CHOICES, initial=datetime.now().month)
+	transaction__credit_card__expiration_year = forms.ChoiceField(choices=EXPIRATION_YEAR_CHOICES)
 	transaction__billing__first_name = forms.CharField(max_length=255)
 	transaction__billing__last_name = forms.CharField(max_length=255)
 	transaction__billing__street_address = forms.CharField(max_length=80)

@@ -11,7 +11,7 @@ setup(
 
     packages = find_packages(),
 
-    install_requires = ['python-dateutil>=1.4,<2.0.0', 'simplejson>=2.1.3'],
+    install_requires = ['python-dateutil>=1.4,<2.0.0', 'simplejson>=2.1.3', 'braintree>=2.10.0'],
     include_package_data = True,
 
     # metadata for upload to PyPI
