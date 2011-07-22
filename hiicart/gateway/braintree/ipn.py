@@ -49,9 +49,10 @@ class BraintreeIPN(IPNBase):
             return
         payment = self.cart.payments.filter(transaction_id=transaction.id)
         if payment:
-            payment[0].state = state
-            payment[0].save()
-            return payment[0]
+            if payment[0].state != state:
+                payment[0].state = state
+                payment[0].save()
+                return payment[0]
         else:
             payment = self._create_payment(transaction.amount, 
                                            transaction.id, state)
@@ -88,13 +89,8 @@ class BraintreeIPN(IPNBase):
 
         Return True if the payment has Settled or Failed, or False if it is
         still pending.
-
-        In development, it will force the payment status to 'settled'.
         """
         transaction = braintree.Transaction.find(transaction_id)
-        # Force settlement on dev
-        if not self.settings["LIVE"]:
-            transaction.status = u"settled"
         if transaction:
             payment = self._record_payment(transaction)
             if payment:
@@ -104,3 +100,17 @@ class BraintreeIPN(IPNBase):
                     self.cart.set_state("CANCELLED")
                 return payment.state != "PENDING"
         return False
+
+    def void_order(self, transaction_id):
+        """
+        Void an existing Braintree transaction and set the payment to failed.
+
+        Returns True if the transaction was voided successfully.
+        """
+        result = braintree.Transaction.void(transaction_id)
+        if result.is_success:
+            payment = self.cart.payments.filter(transaction_id=transaction_id)
+            if payment:
+                payment[0].state = "FAILED"
+                payment[0].save()
+        return result.is_success
