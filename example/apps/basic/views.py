@@ -30,6 +30,14 @@ def index(request):
     p = PrettyPrinter(width=40)
     context['paypal'] = (p.pformat(settings.HIICART_SETTINGS['PAYPAL']),
                          validate_gateway('paypal'))
+    context['paypal2'] = (p.pformat(settings.HIICART_SETTINGS['PAYPAL2']),
+                          validate_gateway('paypal2'))
+    context['paypal_adaptive'] = (p.pformat(settings.HIICART_SETTINGS['PAYPAL_ADAPTIVE']),
+                                  validate_gateway('paypal_adaptive'))
+    context['google'] = (p.pformat(settings.HIICART_SETTINGS['GOOGLE']),
+                         validate_gateway('google'))
+    context['amazon'] = (p.pformat(settings.HIICART_SETTINGS['AMAZON']),
+                         validate_gateway('amazon'))
     context['form'] = form
     return render_to_response('index.html', context)
 
