@@ -8,7 +8,7 @@ from hiicart.models import CART_TYPES
 BRAINTREE_STATUS = {"PAID": ["settled"],
                     "PENDING": ["authorized", "authorizing",
                                 "submitted_for_settlement"],
-                    "FAILED": ["failed", "gateway_rejected", 
+                    "FAILED": ["failed", "gateway_rejected",
                                "processor_declined", "settlement_failed"],
                     "CANCELLED": ["voided"]}
 
@@ -18,9 +18,10 @@ class BraintreeIPN(IPNBase):
 
     def __init__(self, cart):
         super(BraintreeIPN, self).__init__("braintree", cart, default_settings)
-        self._require_settings(["MERCHANT_ID", "MERCHANT_KEY", "MERCHANT_PRIVATE_KEY"])
-        braintree.Configuration.configure(self.environment, 
-                                          self.settings["MERCHANT_ID"], 
+        self._require_settings(["MERCHANT_ID", "MERCHANT_KEY",
+                                "MERCHANT_PRIVATE_KEY"])
+        braintree.Configuration.configure(self.environment,
+                                          self.settings["MERCHANT_ID"],
                                           self.settings["MERCHANT_KEY"],
                                           self.settings["MERCHANT_PRIVATE_KEY"])
 
@@ -52,7 +53,8 @@ class BraintreeIPN(IPNBase):
             payment[0].save()
             return payment[0]
         else:
-            payment = self._create_payment(transaction.amount, transaction.id, state)
+            payment = self._create_payment(transaction.amount, 
+                                           transaction.id, state)
             payment.save()
             return payment
 
@@ -100,7 +102,5 @@ class BraintreeIPN(IPNBase):
                     self.cart.set_state("COMPLETED")
                 elif payment.state == "CANCELLED":
                     self.cart.set_state("CANCELLED")
-                
                 return payment.state != "PENDING"
         return False
-        

@@ -13,9 +13,10 @@ class BraintreeGateway(PaymentGatewayBase):
 
     def __init__(self, cart):
         super(BraintreeGateway, self).__init__("braintree", cart, default_settings)
-        self._require_settings(["MERCHANT_ID", "MERCHANT_KEY", "MERCHANT_PRIVATE_KEY"])
-        braintree.Configuration.configure(self.environment, 
-                                          self.settings["MERCHANT_ID"], 
+        self._require_settings(["MERCHANT_ID", "MERCHANT_KEY",
+                                "MERCHANT_PRIVATE_KEY"])
+        braintree.Configuration.configure(self.environment,
+                                          self.settings["MERCHANT_ID"],
                                           self.settings["MERCHANT_KEY"],
                                           self.settings["MERCHANT_PRIVATE_KEY"])
 
@@ -49,7 +50,7 @@ class BraintreeGateway(PaymentGatewayBase):
             "transaction": {"type": "sale",
                             "order_id": self.cart.cart_uuid,
                             "amount": self.cart.total,
-                            "options": {"submit_for_settlement": True}}}, 
+                            "options": {"submit_for_settlement": True}}},
             request.build_absolute_uri(request.path))
         return tr_data
 
@@ -65,14 +66,16 @@ class BraintreeGateway(PaymentGatewayBase):
             result = braintree.TransparentRedirect.confirm(request.META['QUERY_STRING'])
         except Exception, e:
             errors = {'non_field_errors': 'Request to payment gateway failed.'}
-            return PaymentResult(transaction_id=None, success=False, status=None, errors=errors)\
-        
+            return PaymentResult(transaction_id=None, success=False,
+                                 status=None, errors=errors)
+
         if result.is_success:
             handler = BraintreeIPN(self.cart)
             created = handler.new_order(result.transaction)
             if created:
-                return PaymentResult(transaction_id=result.transaction.id, 
-                                     success=True, status=result.transaction.status)
+                return PaymentResult(transaction_id=result.transaction.id,
+                                     success=True,
+                                     status=result.transaction.status)
         errors = {}
         if not result.transaction:
             transaction_id = None
@@ -86,5 +89,5 @@ class BraintreeGateway(PaymentGatewayBase):
                 errors = {'non_field_errors': result.transaction.processor_response_text}
             elif result.transaction.status == "gateway_rejected":
                 errors = {'non_field_errors': result.transaction.gateway_rejection_reason}
-        return PaymentResult(transaction_id=transaction_id, success=False, 
+        return PaymentResult(transaction_id=transaction_id, success=False,
                              status=status, errors=errors)

@@ -46,7 +46,7 @@ class _SharedBase(object):
             if s:
                 self.settings.update(s)
                 return
-        self.settings = self._settings_base.copy() # reset to defaults
+        self.settings = self._settings_base.copy()  # reset to defaults
 
     def _update_with_cart_settings(self, cart_settings_kwargs):
         """Pull cart-specific settings and update self.settings with them.
@@ -54,11 +54,12 @@ class _SharedBase(object):
         we're able to have different carts use different google accounts."""
         if self.cart.hiicart_settings.get("CART_SETTINGS_FN"):
             cart_settings_kwargs = cart_settings_kwargs or {}
-            s = call_func(self.cart.hiicart_settings["CART_SETTINGS_FN"], self.cart, **cart_settings_kwargs)
+            s = call_func(self.cart.hiicart_settings["CART_SETTINGS_FN"],
+                          self.cart, **cart_settings_kwargs)
             if s:
                 self.settings.update(s)
                 return
-        self.settings = self._settings_base.copy() # reset to defaults
+        self.settings = self._settings_base.copy()  # reset to defaults
 
     def _require_files(self, filenames):
         """Verify a file exists on disk. Usually use for key files."""
@@ -87,7 +88,7 @@ class IPNBase(_SharedBase):
 
     Provides shared functionality among IPN implementations
     """
-    pass # All covered by _SharedBase for now
+    pass  # All covered by _SharedBase for now
 
 
 class PaymentGatewayBase(_SharedBase):
