@@ -52,21 +52,8 @@ class GoogleGateway(PaymentGatewayBase):
         """Cancel recurring items with gateway. Returns a CancelResult."""
         # Cancellation is a problem beacuse it requires refund. Need to find a way around this.
         # May have to redirect users to subscription page like Paypal does.
-        raise NotImplementedError
-        #if self.cart.payments.count() == 0 or len(self.cart.recurring_lineitems) == 0:
-        #    return
-        #payment = self.cart.payments.all()[0]
-        #item = self.cart.recurring_lineitems[0]
-        #params = {"_type" : "cancel-items",
-        #          "google-order-number": payment.transaction_id,
-        #          "reason" : "",
-        #          "comment" : "",
-        #          "item-ids.item-id-1.merchant-item-id" : item.sku,
-        #          "send-email": False}
-        #response, content = self._send_command(self._order_url, params)
-        #self.log.debug("cancel-items response: %s" % content)
-        #item.is_active = False
-        #item.save()
+        msg = "Cancellation requires a refund on Google so cancellation must be done manually."
+        raise NotImplementedError(msg)
 
     def charge_recurring(self, grace_period=None):
         """HiiCart doesn't currently support manually charging subscriptions with Google Checkout"""
